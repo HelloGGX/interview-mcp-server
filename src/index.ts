@@ -2,7 +2,7 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-
+import { interviewRecordingTool } from "./tools/interviewer-tool.js";
 
 const VERSION = "0.0.0";
 const server = new McpServer({
@@ -18,10 +18,8 @@ const server = new McpServer({
   },
 });
 
-
 // Register tools
-new readUsageDocTool().register(server);
-
+new interviewRecordingTool().register(server);
 
 async function runServer() {
   const transport = new StdioServerTransport();
