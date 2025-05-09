@@ -2,12 +2,8 @@ import { z } from "zod";
 import { BaseTool } from "../utils/base-tool.js";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import dotenv from "dotenv";
-import path from "path";
-import fs from "fs";
-//@ts-ignore
-import recorder from "node-record-lpcm16";
-import * as pty from "node-pty";
-import os from "os";
+import { exec } from "child_process";
+import { createRecorderHTML } from "../utils/createRecorderHtml.js";
 
 // 加载环境变量
 dotenv.config();
@@ -15,21 +11,6 @@ dotenv.config();
 // 常量定义
 const OPENROUTER_MODEL_ID = process.env.OPENROUTER_MODEL_ID;
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-const RECORDINGS_DIR = path.join(process.cwd(), "recordings");
-const COMMAND = "/record";
-
-// // 环境变量检查
-// if (!OPENROUTER_MODEL_ID) {
-//   throw new Error("OPENROUTER_MODEL_ID 环境变量未设置");
-// }
-// if (!OPENROUTER_API_KEY) {
-//   throw new Error("OPENROUTER_API_KEY 环境变量未设置");
-// }
-
-// 初始化 OpenRouter 客户端
-// const openrouter = createOpenRouter({
-//   apiKey: OPENROUTER_API_KEY,
-// });
 
 /**
  * 面试录音工具类
@@ -37,8 +18,7 @@ const COMMAND = "/record";
  */
 export class interviewRecordingTool extends BaseTool {
   name = "interview-recording";
-  description =
-    "When the interview begins, call the system recording, record the interview conversation, and form a copy and evaluation. Use this tool when mentions /record";
+  description = "当面试开始时，记录面试对话，并形成副本和评估。当用户输入 /record 时使用此工具";
 
   // 参数定义
   schema = z.object({
@@ -54,45 +34,35 @@ export class interviewRecordingTool extends BaseTool {
     content: Array<{ type: "text"; text: string }>;
   }> {
     try {
-      // 确保录音目录存在
-      if (!fs.existsSync(RECORDINGS_DIR)) {
-        fs.mkdirSync(RECORDINGS_DIR, { recursive: true });
+      // 创建录音HTML页面
+      const { htmlPath, filePath } = createRecorderHTML(name || "record");
+
+      // 打开浏览器
+      let openCommand;
+      if (process.platform === "darwin") {
+        openCommand = `open ${htmlPath}`;
+      } else if (process.platform === "win32") {
+        openCommand = `start ${htmlPath}`;
+      } else {
+        openCommand = `xdg-open ${htmlPath}`;
       }
 
-      // 生成录音文件名
-      const fileName = name || `interview_${new Date().toISOString().replace(/[:.]/g, "-")}`;
-      const filePath = path.join(RECORDINGS_DIR, `${fileName}.wav`);
-
-      // 获取系统 shell
-      const shell = os.platform() === "win32" ? "powershell.exe" : "bash";
-
-      // 启动终端
-      const terminal = pty.spawn(shell, [], {
-        name: "xterm-color",
-        cols: 80,
-        rows: 30,
-        cwd: process.cwd(),
-        env: process.env as { [key: string]: string },
-      });
-      terminal.onData((data) => {
-        process.stdout.write(data);
+      exec(openCommand, (error) => {
+        if (error) {
+          console.error("打开浏览器失败:", error);
+        }
       });
 
-      terminal.write("ls\r");
-      terminal.resize(100, 40);
-      terminal.write("ls\r");
-
-      // 输出终端启动信息
       return {
         content: [
           {
             type: "text",
-            text: `终端已启动，准备开始录制面试 ${shell}。\n文件将保存为: ${filePath}\n\n请在终端中输入命令进行操作，输入 'exit' 结束录制。`,
+            text: `已启动录音界面，浏览器窗口已打开，录音已自动开始。\n录音将保存到: ${filePath}\n\n您可以在浏览器中暂停或结束录音，完成后点击"结束录音"按钮保存录音文件。`,
           },
         ],
       };
     } catch (error) {
-      console.error("Error executing tool:", error);
+      console.error("执行工具时出错:", error);
       throw error;
     }
   }
