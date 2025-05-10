@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.10.2",
+    "@opendocsg/pdf2md": "^0.2.1",
     "@openrouter/ai-sdk-provider": "^0.4.5",
     "ai": "^4.3.10",
     "dotenv": "^16.5.0",
@@ -43,6 +44,8 @@
   "devDependencies": {
     "@types/node": "^22.14.0",
     "@types/node-notifier": "^8.0.5",
+    "@types/pdf-parse": "^1.1.5",
+    "@types/turndown": "^5.0.5",
     "@typescript-eslint/eslint-plugin": "^8.31.1",
     "@typescript-eslint/parser": "^8.31.1",
     "copyfiles": "^2.4.1",

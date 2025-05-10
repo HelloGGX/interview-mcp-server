@@ -3,9 +3,13 @@ import { BaseTool } from "../utils/base-tool.js";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import dotenv from "dotenv";
 import { exec } from "child_process";
-import fs from "fs";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
+import fs from "fs/promises";
+import pdf2md from "@opendocsg/pdf2md";
+import { generateText } from "ai";
+import { transformMessages } from "../utils/interview.js";
+import { GENERATE_QUESTION } from "../prompts/interview.js";
 
 // 加载环境变量
 dotenv.config();
@@ -19,13 +23,13 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
  * 面试录音工具类
  * 用于记录面试对话并进行评估
  */
-export class interviewRecordingTool extends BaseTool {
-  name = "interview-recording";
-  description = "当面试开始时，记录面试对话，并形成副本和评估。当用户输入 /record 时使用此工具";
+export class recordTool extends BaseTool {
+  name = "recordTool";
+  description =
+    "When the interview begins,Use this tool to record the interview conversation. Use this tool when mentions /record";
 
   // 参数定义
   schema = z.object({});
-
   /**
    * 执行录音工具
    * @param params 命令参数
@@ -65,5 +69,171 @@ export class interviewRecordingTool extends BaseTool {
       console.error("执行工具时出错:", error);
       throw error;
     }
+  }
+}
+
+export class pdfToMdTool extends BaseTool {
+  name = "pdfToMdTool";
+  description = "Convert the content in pdf to markdown file";
+
+  // 参数定义
+  schema = z.object({
+    absolutePathToPdfFile: z
+      .string()
+      .describe("Absolute path to the pdf file that needs to be converted to markdown"),
+  });
+  /**
+   * 执行录音工具
+   * @param params 命令参数
+   * @returns 执行结果
+   */
+  async execute({ absolutePathToPdfFile }: z.infer<typeof this.schema>): Promise<{
+    content: Array<{ type: "text"; text: string }>;
+  }> {
+    try {
+      const dataBuffer = await fs.readFile(absolutePathToPdfFile);
+      // @ts-ignore
+      const text = await pdf2md(dataBuffer);
+      // 获取pdf文件所在目录
+      const pdfDir = path.dirname(absolutePathToPdfFile);
+      // 生成markdown文件名，与pdf同名但后缀为.md
+      const mdFileName = path.basename(absolutePathToPdfFile, ".pdf") + ".md";
+      // 生成markdown文件的完整路径
+      const mdFilePath = path.join(pdfDir, mdFileName);
+      // 将markdown内容写入文件
+      await fs.writeFile(mdFilePath, text, "utf-8");
+      return {
+        content: [
+          {
+            type: "text",
+            text: `转换成功！文件已保存到${mdFilePath}`,
+          },
+        ],
+      };
+    } catch (error) {
+      console.error("PDF转换失败:", error);
+      return {
+        content: [
+          {
+            type: "text",
+            text: "PDF转换失败，请检查文件路径和格式",
+          },
+        ],
+      };
+    }
+  }
+}
+
+export class mdToQuestionTool extends BaseTool {
+  name = "mdToQuestionTool";
+  description =
+    "Generate interview questions and answers based on the content in the markdown file";
+
+  // 参数定义
+  schema = z.object({
+    absolutePathToMdFile: z
+      .string()
+      .describe("The absolute address of the resume file in markdown format"),
+    // 前端开发、后端开发、测试工程师
+    position: z
+      .enum(["frontend", "backend", "test"])
+      .describe("The type of interview, frontend or backend"),
+    level: z
+      .enum(["junior", "mid", "senior"])
+      .describe(
+        "The ability level of the interviewee is divided into: beginner, intermediate and advanced"
+      ),
+  });
+
+  async execute({ absolutePathToMdFile, level, position }: z.infer<typeof this.schema>): Promise<{
+    content: Array<{ type: "text"; text: string }>;
+  }> {
+    try {
+      if (!OPENROUTER_MODEL_ID) {
+        throw new Error("OPENROUTER_MODEL_ID is not set");
+      }
+      if (!OPENROUTER_API_KEY) {
+        throw new Error("OPENROUTER_API_KEY is not set");
+      }
+
+      const openrouter = createOpenRouter({
+        apiKey: OPENROUTER_API_KEY,
+      });
+
+      // 读取markdown文件内容
+      const mdContent = await fs.readFile(absolutePathToMdFile, "utf-8");
+      const messages = transformMessages([
+        {
+          role: "user",
+          content: {
+            type: "text",
+            text: `<resume>${mdContent}</resume>
+            <position>${position}</position>
+            <level>${level}</level>`,
+          },
+        },
+      ]);
+
+      // 调用openrouter的api，生成面试问题
+      const { text } = await generateText({
+        system: GENERATE_QUESTION,
+        messages: messages,
+        model: openrouter(OPENROUTER_MODEL_ID),
+        maxTokens: 2000,
+      });
+
+      // 获取markdown文件所在目录
+      const mdDir = path.dirname(absolutePathToMdFile);
+      // 生成markdown文件名，与pdf同名但后缀为.md
+      const mdFileName = "question.md";
+      // 生成markdown文件的完整路径
+      const mdFilePath = path.join(mdDir, mdFileName);
+      // 将markdown内容写入文件
+      await fs.writeFile(mdFilePath, text, "utf-8");
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: `面试问题生成成功，文件已保存到${mdFilePath}`,
+          },
+        ],
+      };
+    } catch (error) {
+      console.error("面试问题生成失败:", error);
+      return {
+        content: [
+          {
+            type: "text",
+            text: "面试问题生成失败",
+          },
+        ],
+      };
+    }
+  }
+}
+
+export class questionTool extends BaseTool {
+  name = "questionTool";
+  description =
+    "Generate interview questions and answers based on the content of the pdf resume file, Use this tool when mentions /question";
+
+  // 参数定义
+  schema = z.object({});
+
+  async execute({}: z.infer<typeof this.schema>): Promise<{
+    content: Array<{ type: "text"; text: string }>;
+  }> {
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Use the following MCP tools one after the other in this exact sequence:
+      1. pdfToMdTool
+      2. mdToQuestionTool
+      After running all of these tools, Please end the model call`,
+        },
+      ],
+    };
   }
 }
