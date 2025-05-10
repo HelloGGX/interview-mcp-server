@@ -26,7 +26,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 export class recordTool extends BaseTool {
   name = "recordTool";
   description =
-    "When the interview begins,Use this tool to record the interview conversation. Use this tool when mentions /record";
+    "When the user mentions to start an interview, use this tool to record the interview conversation. Use this tool when mentioning /record";
 
   // 参数定义
   schema = z.object({});
@@ -91,15 +91,32 @@ export class pdfToMdTool extends BaseTool {
     content: Array<{ type: "text"; text: string }>;
   }> {
     try {
-      const dataBuffer = await fs.readFile(absolutePathToPdfFile);
-      // @ts-ignore
-      const text = await pdf2md(dataBuffer);
+     
       // 获取pdf文件所在目录
       const pdfDir = path.dirname(absolutePathToPdfFile);
       // 生成markdown文件名，与pdf同名但后缀为.md
       const mdFileName = path.basename(absolutePathToPdfFile, ".pdf") + ".md";
       // 生成markdown文件的完整路径
       const mdFilePath = path.join(pdfDir, mdFileName);
+
+      // 检查md文件是否已存在
+      const fileExists = await fs.access(mdFilePath).then(() => true).catch(() => false);
+      
+      if (fileExists) {
+        // 如果文件存在，直接返回
+        return {
+          content: [
+            {
+              type: "text", 
+              text: `Markdown文件已存在：${mdFilePath}`,
+            },
+          ],
+        };
+      }
+      // 文件不存在，继续转换流程
+      const dataBuffer = await fs.readFile(absolutePathToPdfFile);
+      // @ts-ignore
+      const text = await pdf2md(dataBuffer);
       // 将markdown内容写入文件
       await fs.writeFile(mdFilePath, text, "utf-8");
       return {

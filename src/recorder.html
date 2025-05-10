@@ -56,6 +56,7 @@
     let analyser;
     let source;
     let animationId;
+    let recordingStream; // 添加变量保存录音流
     
     const statusEl = document.getElementById('status');
     const startBtn = document.getElementById('startBtn');
@@ -175,12 +176,193 @@
       }
     }
     
+    // 创建WAV文件
+    function createWavFile(audioChunks) {
+      return new Promise(resolve => {
+        // 创建音频上下文
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        // 创建临时Blob
+        const tempBlob = new Blob(audioChunks, { type: 'audio/webm; codecs=opus' });
+        
+        // 读取Blob为ArrayBuffer
+        const fileReader = new FileReader();
+        fileReader.onload = function() {
+          const arrayBuffer = this.result;
+          
+          // 解码音频数据
+          audioCtx.decodeAudioData(arrayBuffer).then(audioBuffer => {
+            // 获取音频参数
+            const numberOfChannels = audioBuffer.numberOfChannels;
+            const sampleRate = audioBuffer.sampleRate;
+            const length = audioBuffer.length;
+            
+            // 降采样处理 - 如果采样率高于16kHz，则降低到16kHz
+            let targetSampleRate = 16000;
+            let targetLength = length;
+            let targetAudioBuffer = audioBuffer;
+            
+            if (sampleRate > targetSampleRate) {
+              const ratio = targetSampleRate / sampleRate;
+              targetLength = Math.round(length * ratio);
+              const offlineCtx = new OfflineAudioContext(numberOfChannels, targetLength, targetSampleRate);
+              const source = offlineCtx.createBufferSource();
+              source.buffer = audioBuffer;
+              source.connect(offlineCtx.destination);
+              source.start();
+              
+              // 使用离线上下文进行降采样
+              offlineCtx.startRendering().then(renderedBuffer => {
+                targetAudioBuffer = renderedBuffer;
+                processAudioData(targetAudioBuffer, targetSampleRate);
+              }).catch(err => {
+                console.error('降采样失败:', err);
+                processAudioData(audioBuffer, sampleRate);
+              });
+            } else {
+              processAudioData(audioBuffer, sampleRate);
+            }
+            
+            // 处理音频数据并创建WAV文件
+            function processAudioData(buffer, rate) {
+              const channels = buffer.numberOfChannels;
+              const length = buffer.length;
+              
+              // 静音检测和去除 - 检测音量低于阈值的部分
+              const silenceThreshold = 0.01; // 静音阈值
+              let audioData = [];
+              let isSilence = true;
+              let silenceCounter = 0;
+              
+              // 获取所有通道的数据
+              for (let i = 0; i < length; i++) {
+                let sum = 0;
+                for (let channel = 0; channel < channels; channel++) {
+                  const channelData = buffer.getChannelData(channel);
+                  sum += Math.abs(channelData[i]);
+                }
+                
+                // 计算平均振幅
+                const avgAmplitude = sum / channels;
+                
+                // 检测是否为静音
+                if (avgAmplitude < silenceThreshold) {
+                  if (!isSilence) {
+                    silenceCounter++;
+                    // 如果连续静音超过0.5秒，则标记为静音段
+                    if (silenceCounter > rate * 0.5) {
+                      isSilence = true;
+                      silenceCounter = 0;
+                    }
+                  }
+                } else {
+                  isSilence = false;
+                  silenceCounter = 0;
+                }
+                
+                // 如果不是静音段或者是静音段但需要保留一些静音（避免声音突变）
+                if (!isSilence || silenceCounter < rate * 0.2) {
+                  for (let channel = 0; channel < channels; channel++) {
+                    const channelData = buffer.getChannelData(channel);
+                    audioData.push(channelData[i]);
+                  }
+                }
+              }
+              
+              // 转换为16位PCM
+              const pcmData = new Int16Array(audioData.length);
+              for (let i = 0; i < audioData.length; i++) {
+                const s = Math.max(-1, Math.min(1, audioData[i]));
+                pcmData[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+              }
+              
+              // 创建WAV文件头
+              const wavBuffer = createWavHeader(pcmData.length / channels, channels, rate);
+              
+              // 合并头部和数据
+              const wavBlob = new Blob([wavBuffer, pcmData], { type: 'audio/wav' });
+              resolve(wavBlob);
+            }
+          }).catch(err => {
+            console.error('解码音频失败:', err);
+            // 如果解码失败，返回原始Blob
+            resolve(tempBlob);
+          });
+        };
+        
+        fileReader.readAsArrayBuffer(tempBlob);
+      });
+    }
+    
+    // 创建WAV文件头
+    function createWavHeader(dataLength, numChannels, sampleRate) {
+      const bytesPerSample = 2; // 16位PCM
+      const blockAlign = numChannels * bytesPerSample;
+      const byteRate = sampleRate * blockAlign;
+      const dataSize = dataLength * blockAlign;
+      
+      const buffer = new ArrayBuffer(44);
+      const view = new DataView(buffer);
+      
+      // RIFF标识
+      writeString(view, 0, 'RIFF');
+      // 文件长度
+      view.setUint32(4, 36 + dataSize, true);
+      // WAVE标识
+      writeString(view, 8, 'WAVE');
+      // fmt子块标识
+      writeString(view, 12, 'fmt ');
+      // fmt子块长度
+      view.setUint32(16, 16, true);
+      // 音频格式（PCM = 1）
+      view.setUint16(20, 1, true);
+      // 通道数
+      view.setUint16(22, numChannels, true);
+      // 采样率
+      view.setUint32(24, sampleRate, true);
+      // 字节率
+      view.setUint32(28, byteRate, true);
+      // 块对齐
+      view.setUint16(32, blockAlign, true);
+      // 每个样本的位数
+      view.setUint16(34, bytesPerSample * 8, true);
+      // data子块标识
+      writeString(view, 36, 'data');
+      // data子块长度
+      view.setUint32(40, dataSize, true);
+      
+      return buffer;
+    }
+    
+    // 写入字符串到DataView
+    function writeString(view, offset, string) {
+      for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+      }
+    }
+    
     // 开始录音
     startBtn.addEventListener('click', async () => {
       try {
         saveInfo.innerHTML = '';
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaRecorder = new MediaRecorder(stream);
+        // 降低采样率，使用单声道录音
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: {
+            channelCount: 1,           // 单声道
+            sampleRate: 16000,         // 降低采样率到16kHz (足够人声)
+            echoCancellation: true,    // 回声消除
+            noiseSuppression: true,    // 噪声抑制
+            autoGainControl: true      // 自动增益控制
+          } 
+        });
+        recordingStream = stream;
+        
+        // 设置MediaRecorder选项
+        const options = {
+          audioBitsPerSecond: 64000,   // 降低比特率到64kbps
+          mimeType: 'audio/webm;codecs=opus' // 使用opus编码
+        };
+        
+        mediaRecorder = new MediaRecorder(stream, options);
         
         // 使用新的音频处理函数
         setupAudioProcessor(stream);
@@ -190,13 +372,15 @@
         };
         
         mediaRecorder.onstop = async () => {
-          const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+          // 使用新的WAV文件创建函数
+          const audioBlob = await createWavFile(audioChunks);
           
           // 直接保存到本地，不经过服务器
           const audioUrl = URL.createObjectURL(audioBlob);
           const downloadLink = document.createElement('a');
           downloadLink.href = audioUrl;
-          const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+          const now = new Date();
+          const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}`;
           const fileName = `interview_${timestamp}.wav`;
           downloadLink.download = fileName;
           
@@ -293,8 +477,8 @@
         clearInterval(timer);
         
         // 如果有媒体流，关闭它
-        if (mediaRecorder.stream) {
-          mediaRecorder.stream.getTracks().forEach(track => track.stop());
+        if (recordingStream) {
+          recordingStream.getTracks().forEach(track => track.stop());
         }
       }
       
@@ -345,6 +529,12 @@
     stopBtn.addEventListener('click', () => {
       if (mediaRecorder && isRecording) {
         mediaRecorder.stop();
+        
+        // 停止所有音频轨道
+        if (recordingStream) {
+          recordingStream.getTracks().forEach(track => track.stop());
+        }
+        
         isRecording = false;
         isPaused = false;
         

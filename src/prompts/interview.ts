@@ -59,15 +59,17 @@ export const GENERATE_QUESTION = `
 
 </requirement>
 <response_format>
-{
-  "name": string,
-  "level": string,
-  "position": string,
-  "questions": {
-    "come-From-In-The-Resume": string,
-    "question": string,
-    "answer": string
-  }[]
-}
+
+**姓名**: string
+**能力水平**: string  
+**职位**: string 
+
+### Questions:
+- **Question 1**  
+  - **Come From in the Resume**: string  
+  - **Question**: string
+  - **Answer**: string 
+
+[... Additional questions ...]
 </response_format>
 `;
