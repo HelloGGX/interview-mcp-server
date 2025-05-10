@@ -3,11 +3,9 @@
   "version": "1.0.0",
   "description": "MCP (Model Context Protocol) server for Interviewer",
   "scripts": {
-    "inspect": "tsc && npx @modelcontextprotocol/inspector node -- dist/index.js",
+    "inspect": "npm run build && npx @modelcontextprotocol/inspector node -- dist/index.js",
     "inspect-live": "npx @modelcontextprotocol/inspector npx -- interview-mcp-server",
-    "build": "tsc",
-    "start": "tsc && node dist/index.js",
-    "prepublishOnly": "npm run build",
+    "build": "tsc && copyfiles -u 1 \"src/**/*.html\" dist",
     "update": "npm run build && npm version patch && npm publish --access public",
     "format": "prettier --write .",
     "lint": "eslint \"**/*.{js,ts,tsx}\" --fix"
@@ -39,10 +37,7 @@
     "ai": "^4.3.10",
     "dotenv": "^16.5.0",
     "jsonrepair": "^3.12.0",
-    "node-notifier": "^10.0.1",
-    "node-pty": "^1.0.0",
     "node-record-lpcm16": "^1.0.1",
-    "uuid": "^11.1.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {
@@ -50,10 +45,12 @@
     "@types/node-notifier": "^8.0.5",
     "@typescript-eslint/eslint-plugin": "^8.31.1",
     "@typescript-eslint/parser": "^8.31.1",
+    "copyfiles": "^2.4.1",
     "eslint": "^9.25.1",
     "eslint-config-prettier": "^10.1.2",
     "eslint-plugin-prettier": "^5.2.6",
     "prettier": "^3.5.3",
+    "tsup": "^8.4.0",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.31.1"
   },
