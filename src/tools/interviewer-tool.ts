@@ -254,3 +254,40 @@ export class questionTool extends BaseTool {
     };
   }
 }
+
+// 利用ai传入wav格式的文件，大模型识别出文字内容，返回文字内容
+export class speechToTextTool extends BaseTool {
+  name = "speechToTextTool";
+  description =
+    "Convert the content in wav file to markdown, and identify the dialogue between interviewer and interviewee";
+
+  // 参数定义
+  schema = z.object({
+    absolutePathToWavFile: z
+     .string()
+     .describe("Absolute path to the wav file that needs to be converted to text"),
+  });
+
+  async execute({ absolutePathToWavFile }: z.infer<typeof this.schema>): Promise<{
+    content: Array<{ type: "text"; text: string }>;
+  }> {
+    try {
+      
+
+      return {
+        content: [{
+          type: "text",
+          text: `语音转文字成功！文件已保存到: }`
+        }]
+      };
+    } catch (error) {
+      console.error("语音转文字失败:", error);
+      return {
+        content: [{
+          type: "text", 
+          text: `语音转文字失败：${error instanceof Error ? error.message : String(error)}`
+        }]
+      };
+    }
+  }
+}
