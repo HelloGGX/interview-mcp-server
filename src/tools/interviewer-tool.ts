@@ -259,16 +259,13 @@ export class questionTool extends BaseTool {
 
 export class evaluateTool extends BaseTool {
   name = "evaluateTool";
-  description = "Evaluate the interviewer's performance based on the interview conversation";
+  description = "Evaluate the interviewer's performance based on the interview conversation, Use this tool when mentions /evaluate";
 
   // 参数定义
   schema = z.object({
     absolutePathToQuestion: z
       .string()
       .describe("Absolute path to the question file in markdown format"),
-    absolutePathToResume: z
-      .string()
-      .describe("Absolute path to the resume file in markdown format"),
     absolutePathToConversation: z
       .string()
       .describe("Absolute path to the conversation file in markdown format"),
