@@ -9,7 +9,7 @@ import fs from "fs/promises";
 import pdf2md from "@opendocsg/pdf2md";
 import { generateText } from "ai";
 import { transformMessages } from "../utils/interview.js";
-import { GENERATE_QUESTION } from "../prompts/interview.js";
+import { EVALUATE, GENERATE_QUESTION } from "../prompts/interview.js";
 
 // 加载环境变量
 dotenv.config();
@@ -91,7 +91,6 @@ export class pdfToMdTool extends BaseTool {
     content: Array<{ type: "text"; text: string }>;
   }> {
     try {
-     
       // 获取pdf文件所在目录
       const pdfDir = path.dirname(absolutePathToPdfFile);
       // 生成markdown文件名，与pdf同名但后缀为.md
@@ -100,14 +99,17 @@ export class pdfToMdTool extends BaseTool {
       const mdFilePath = path.join(pdfDir, mdFileName);
 
       // 检查md文件是否已存在
-      const fileExists = await fs.access(mdFilePath).then(() => true).catch(() => false);
-      
+      const fileExists = await fs
+        .access(mdFilePath)
+        .then(() => true)
+        .catch(() => false);
+
       if (fileExists) {
         // 如果文件存在，直接返回
         return {
           content: [
             {
-              type: "text", 
+              type: "text",
               text: `Markdown文件已存在：${mdFilePath}`,
             },
           ],
@@ -255,38 +257,90 @@ export class questionTool extends BaseTool {
   }
 }
 
-// 利用ai传入wav格式的文件，大模型识别出文字内容，返回文字内容
-export class speechToTextTool extends BaseTool {
-  name = "speechToTextTool";
-  description =
-    "Convert the content in wav file to markdown, and identify the dialogue between interviewer and interviewee";
+export class evaluateTool extends BaseTool {
+  name = "evaluateTool";
+  description = "Evaluate the interviewer's performance based on the interview conversation";
 
   // 参数定义
   schema = z.object({
-    absolutePathToWavFile: z
-     .string()
-     .describe("Absolute path to the wav file that needs to be converted to text"),
+    absolutePathToQuestion: z
+      .string()
+      .describe("Absolute path to the question file in markdown format"),
+    absolutePathToResume: z
+      .string()
+      .describe("Absolute path to the resume file in markdown format"),
+    absolutePathToConversation: z
+      .string()
+      .describe("Absolute path to the conversation file in markdown format"),
   });
 
-  async execute({ absolutePathToWavFile }: z.infer<typeof this.schema>): Promise<{
+  async execute({
+    absolutePathToConversation,
+    absolutePathToQuestion,
+  }: z.infer<typeof this.schema>): Promise<{
     content: Array<{ type: "text"; text: string }>;
   }> {
     try {
+      if (!OPENROUTER_MODEL_ID) {
+        throw new Error("OPENROUTER_MODEL_ID is not set");
+      }
+      if (!OPENROUTER_API_KEY) {
+        throw new Error("OPENROUTER_API_KEY is not set");
+      }
+
+      const openrouter = createOpenRouter({
+        apiKey: OPENROUTER_API_KEY,
+      });
+
+      // 读取markdown文件内容
+      const questionContent = await fs.readFile(absolutePathToQuestion, "utf-8");
+      const conversationContent = await fs.readFile(absolutePathToConversation, "utf-8");
+
+      // 基于conversationContent内容，简历内容，问题内容，生成评估报告，其中占比重要性为对话内容的60%，简历内容的10%，问题内容的30%
+      const messages = transformMessages([
+        {
+          role: "user",
+          content: {
+            type: "text",
+            text: `<question>${questionContent}</question>
+            <conversation>${conversationContent}</conversation>`,
+          },
+        },
+      ]);
+
+      // 调用openrouter的api，生成评估报告
+      const { text } = await generateText({
+        system: EVALUATE,
+        messages: messages,
+        model: openrouter(OPENROUTER_MODEL_ID),
+        maxTokens: 2000,
+      });
+
+      // 获取评估报告文件路径
+      const conversationDir = path.dirname(absolutePathToConversation);
+      const evaluationFileName = "evaluation.md";
+      const evaluationFilePath = path.join(conversationDir, evaluationFileName);
       
+      // 将评估报告写入文件
+      await fs.writeFile(evaluationFilePath, text, "utf-8");
 
       return {
-        content: [{
-          type: "text",
-          text: `语音转文字成功！文件已保存到: }`
-        }]
+        content: [
+          {
+            type: "text",
+            text: `评估报告生成成功！文件已保存到: ${evaluationFilePath}`,
+          },
+        ],
       };
     } catch (error) {
       console.error("语音转文字失败:", error);
       return {
-        content: [{
-          type: "text", 
-          text: `语音转文字失败：${error instanceof Error ? error.message : String(error)}`
-        }]
+        content: [
+          {
+            type: "text",
+            text: `语音转文字失败：${error instanceof Error ? error.message : String(error)}`,
+          },
+        ],
       };
     }
   }
