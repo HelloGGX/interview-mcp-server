@@ -2,7 +2,7 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { mdToQuestionTool, pdfToMdTool, questionTool, recordTool } from "./tools/interviewer-tool.js";
+import { evaluateTool, mdToQuestionTool, pdfToMdTool, questionTool, recordTool } from "./tools/interviewer-tool.js";
 
 const VERSION = "0.0.0";
 const server = new McpServer({
@@ -23,6 +23,7 @@ new recordTool().register(server);
 new pdfToMdTool().register(server);
 new mdToQuestionTool().register(server);
 new questionTool().register(server);
+new evaluateTool().register(server);
 
 async function runServer() {
   const transport = new StdioServerTransport();
