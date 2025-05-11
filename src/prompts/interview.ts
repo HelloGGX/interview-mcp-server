@@ -74,7 +74,6 @@ Technical Ability: Test depth of knowledge, technical proficiency, and ability t
 ### 面试问题:
 - **问题 1**  
   - **Resume Excerpt**: string 
-  - **Type**: [技术能力, 沟通技巧, 解决问题能力, 其他] 
   - **Question**: string
   - **Reference Answer**: string 
 
@@ -127,10 +126,6 @@ If no role is specified, make reasonable assumptions (e.g., software engineer fo
 
 
 <response_format>
-候选人姓名: [String]
-申请职位: [String, e.g., Software Engineer, Marketing Manager]
-面试日期: [Date, if provided, or state “Not specified”]
-面试官: [String, your name] 
 总体能力水平：[junior, mid, senior]
 
 ### 技术能力 

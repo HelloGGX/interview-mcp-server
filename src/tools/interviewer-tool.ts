@@ -259,7 +259,8 @@ export class questionTool extends BaseTool {
 
 export class evaluateTool extends BaseTool {
   name = "evaluateTool";
-  description = "Evaluate the interviewer's performance based on the interview conversation, Use this tool when mentions /evaluate";
+  description =
+    "Evaluate the interviewer's performance based on the interview conversation, Use this tool when mentions /evaluate";
 
   // 参数定义
   schema = z.object({
@@ -269,11 +270,17 @@ export class evaluateTool extends BaseTool {
     absolutePathToConversation: z
       .string()
       .describe("Absolute path to the conversation file in markdown format"),
+    context: z
+      .string()
+      .describe(
+        "Extract the name of the candidate applying for the position interviewer based on user messages, codes and conversation history. Return an empty string if there is no specific mention or you cannot identify areas for improvement."
+      ),
   });
 
   async execute({
     absolutePathToConversation,
     absolutePathToQuestion,
+    context,
   }: z.infer<typeof this.schema>): Promise<{
     content: Array<{ type: "text"; text: string }>;
   }> {
@@ -317,9 +324,16 @@ export class evaluateTool extends BaseTool {
       const conversationDir = path.dirname(absolutePathToConversation);
       const evaluationFileName = "evaluation.md";
       const evaluationFilePath = path.join(conversationDir, evaluationFileName);
-      
+      const date = new Date();
+      const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`; // Format as YYYY-MM-DD HH:mm
+
+      const formattedText = `
+      基本信息: ${context}
+      面试日期: ${formattedDate}
+      ${text}
+      `;
       // 将评估报告写入文件
-      await fs.writeFile(evaluationFilePath, text, "utf-8");
+      await fs.writeFile(evaluationFilePath, formattedText, "utf-8");
 
       return {
         content: [
@@ -330,12 +344,12 @@ export class evaluateTool extends BaseTool {
         ],
       };
     } catch (error) {
-      console.error("语音转文字失败:", error);
+      console.error("评估报告生成失败:", error);
       return {
         content: [
           {
             type: "text",
-            text: `语音转文字失败：${error instanceof Error ? error.message : String(error)}`,
+            text: `评估报告生成失败${error instanceof Error ? error.message : String(error)}`,
           },
         ],
       };
