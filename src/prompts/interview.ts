@@ -66,7 +66,6 @@ Technical Ability: Test depth of knowledge, technical proficiency, and ability t
 
 </requirement>
 <response_format>
-
 **候选人姓名**: string
 **申请能力等级**: string  
 **申请职位**: string 
@@ -132,6 +131,9 @@ If no role is specified, make reasonable assumptions (e.g., software engineer fo
 </requirements>
 
 <response_format>
+**候选人姓名**: string
+**申请能力等级**: string  
+**申请职位**: string 
 **总体能力水平**：[junior, mid, senior]
 
 ### 技术能力 
