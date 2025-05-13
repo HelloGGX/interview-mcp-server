@@ -317,7 +317,7 @@ export class evaluateTool extends BaseTool {
         system: EVALUATE,
         messages: messages,
         model: openrouter(OPENROUTER_MODEL_ID),
-        maxTokens: 2000,
+        maxTokens: 8192,
       });
 
       // 获取评估报告文件路径
@@ -325,7 +325,7 @@ export class evaluateTool extends BaseTool {
       const evaluationFileName = "evaluation.md";
       const evaluationFilePath = path.join(conversationDir, evaluationFileName);
       const date = new Date();
-      const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`; // Format as YYYY-MM-DD HH:mm
+      const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`; // Format as YYYY-MM-DD HH:mm
 
       const formattedText = `
       基本信息: ${context}
