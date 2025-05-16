@@ -156,7 +156,7 @@ export class mdToQuestionTool extends BaseTool {
     // 前端开发、后端开发、测试工程师
     position: z
       .enum(["frontend", "backend", "test"])
-      .describe("The type of interview, frontend or backend"),
+      .describe("The type of interview, frontend or backend or test"),
     level: z
       .enum(["junior", "mid", "senior"])
       .describe(
