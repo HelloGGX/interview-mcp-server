@@ -198,7 +198,7 @@ export class mdToQuestionTool extends BaseTool {
         system: GENERATE_QUESTION,
         messages: messages,
         model: openrouter(OPENROUTER_MODEL_ID),
-        maxTokens: 2000,
+        maxTokens: 8192,
       });
 
       // 获取markdown文件所在目录
@@ -248,8 +248,8 @@ export class questionTool extends BaseTool {
         {
           type: "text",
           text: `Use the following MCP tools one after the other in this exact sequence:
-      1. pdfToMdTool
-      2. mdToQuestionTool
+      step 1. pdfToMdTool
+      step 2. mdToQuestionTool
       After running all of these tools, Please end the model call`,
         },
       ],
