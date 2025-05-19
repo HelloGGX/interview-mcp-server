@@ -34,6 +34,6 @@ MCP提供智能化的面试准备体验：
 4. 面试官根据面试问题进行面试，利用豆包记录对话内容，生成makdown格式的对话内容 conversation.md
 5. 结合questions.md和conversation.md，输入指令 /evaluate 生成评价报告，报告会自动保存到当前文件夹
 
-![使用流程](./flow.png)
+![使用流程](https://hub.gitmirror.com/https://github.com/HelloGGX/interview-mcp-server/blob/main/docs/flow.png)
 
-## 🚀 快速开始
+## 🚀 配置
