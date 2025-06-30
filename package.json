@@ -57,6 +57,9 @@
   },
   "dependencies": {
     "@opendocsg/pdf2md": "^0.2.1",
+    "@openrouter/ai-sdk-provider": "^0.7.2",
+    "ai": "^4.3.16",
+    "dotenv": "^17.0.0",
     "fastmcp": "^1.21.0",
     "marked": "^15.0.12",
     "open": "^10.1.2",
