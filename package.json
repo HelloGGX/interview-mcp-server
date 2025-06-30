@@ -1,61 +1,65 @@
 {
-  "name": "interview-mcp-server",
+  "name": "mcp-interview-server",
+  "module": "src/index.ts",
+  "main": "build/index.js",
+  "type": "module",
   "version": "1.0.0",
-  "description": "MCP (Model Context Protocol) server for Interviewer",
+  "description": "Interview MCP Server 是一款强大的MCP Server工具，为公司提供智能化的面试体验。它集成了更加科学实用的简历分析能力，并与主流IDE无缝集成，为面试官提供高效精简的技术面试准备工作流程。",
+  "private": true,
+  "author": "gavin",
+  "license": "Apache-2.0",
+  "bin": {
+    "interview-mcp-server": "build/http-server.js"
+  },
+  "files": [
+    "build"
+  ],
+  "bugs": {
+    "url": "https://github.com/HelloGGX/interview-mcp-server"
+  },
   "scripts": {
-    "inspect": "npm run build && npx @modelcontextprotocol/inspector node -- dist/index.js",
-    "inspect-live": "npx @modelcontextprotocol/inspector npx -- interview-mcp-server",
-    "build": "tsc && copyfiles -u 1 \"src/**/*.html\" dist",
-    "update": "npm run build && npm version patch && npm publish --access public",
+    "inspect": "npx @modelcontextprotocol/inspector node -- build/index.js",
+    "build": "npx bun build src/index.ts --outdir build --target node && shx chmod +x build/*.js",
+    "build:http": "npx bun build src/server/http-server.ts --outdir build --target node && shx chmod +x build/*.js",
+    "dev": "npx bun --watch src/index.ts",
+    "dev:http": "npx bun --watch src/server/http-server.ts",
+    "start": "npx bun run src/index.ts",
+    "start:http": "npx bun run src/server/http-server.ts",
     "format": "prettier --write .",
     "lint": "eslint \"**/*.{js,ts,tsx}\" --fix"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/HelloGGX/interview-mcp-server"
+    "url": "git+https://github.com/HelloGGX/interview-mcp-server"
   },
   "keywords": [
-    "interview",
-    "mcp"
+    "interview-mcp-server",
+    "mcp",
+    "agent",
+    "fast-mcp"
   ],
-  "author": "gavin",
-  "license": "Apache-2.0",
-  "main": "dist/index.js",
-  "type": "module",
-  "bin": {
-    "interview-mcp": "dist/index.js"
+  "devDependencies": {
+    "@eslint/js": "^9.28.0",
+    "@eslint/json": "^0.12.0",
+    "@eslint/markdown": "^6.5.0",
+    "@types/node": "^20.11.0",
+    "eslint": "^9.28.0",
+    "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-prettier": "^5.4.1",
+    "eslint-plugin-vue": "^10.2.0",
+    "globals": "^16.2.0",
+    "prettier": "^3.5.3",
+    "shx": "^0.4.0",
+    "typescript-eslint": "^8.33.1"
   },
-  "files": [
-    "dist"
-  ],
-  "bugs": {
-    "url": "https://github.com/HelloGGX/interview-mcp-server/issues"
+  "peerDependencies": {
+    "typescript": "^5.8.2"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.10.2",
     "@opendocsg/pdf2md": "^0.2.1",
-    "@openrouter/ai-sdk-provider": "^0.4.5",
-    "ai": "^4.3.10",
-    "dotenv": "^16.5.0",
-    "jsonrepair": "^3.12.0",
+    "fastmcp": "^1.21.0",
+    "marked": "^15.0.12",
+    "open": "^10.1.2",
     "zod": "^3.24.2"
-  },
-  "devDependencies": {
-    "@types/node": "^22.14.0",
-    "@types/node-notifier": "^8.0.5",
-    "@types/pdf-parse": "^1.1.5",
-    "@types/turndown": "^5.0.5",
-    "@typescript-eslint/eslint-plugin": "^8.31.1",
-    "@typescript-eslint/parser": "^8.31.1",
-    "copyfiles": "^2.4.1",
-    "eslint": "^9.25.1",
-    "eslint-config-prettier": "^10.1.2",
-    "eslint-plugin-prettier": "^5.2.6",
-    "prettier": "^3.5.3",
-    "typescript": "^5.7.3",
-    "typescript-eslint": "^8.31.1"
-  },
-  "engines": {
-    "node": ">=18.0.0"
   }
 }

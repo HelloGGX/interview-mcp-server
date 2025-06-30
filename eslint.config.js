@@ -1,37 +1,15 @@
+import js from "@eslint/js";
+import globals from "globals";
 import tseslint from "typescript-eslint";
+import json from "@eslint/json";
+import { defineConfig } from "eslint/config";
 import eslintPluginPrettier from "eslint-plugin-prettier";
 
-export default tseslint.config({
-  // Base ESLint configuration
-  ignores: ["node_modules/**", "build/**", "dist/**", ".git/**", ".github/**"],
-  languageOptions: {
-    ecmaVersion: 2020,
-    sourceType: "module",
-    parser: tseslint.parser,
-    parserOptions: {},
-    globals: {
-      // Add Node.js globals
-      process: "readonly",
-      require: "readonly",
-      module: "writable",
-      console: "readonly",
-    },
-  },
-  // Settings for all files
-  linterOptions: {
-    reportUnusedDisableDirectives: true,
-  },
-  // Apply ESLint recommended rules
-  extends: [tseslint.configs.recommended, "plugin:prettier/recommended"],
-  plugins: {
-    prettier: eslintPluginPrettier,
-  },
-  rules: {
-    // TypeScript rules
-    "@typescript-eslint/explicit-module-boundary-types": "off",
-    "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
-    "@typescript-eslint/no-explicit-any": "warn",
-    // Prettier integration
-    "prettier/prettier": "error",
-  },
-});
+export default defineConfig([
+  { files: ["**/*.{js,mjs,cjs,ts,mts,cts}"], plugins: { js }, extends: ["js/recommended"] },
+  { files: ["**/*.{js,mjs,cjs,ts,mts,cts}"], languageOptions: { globals: globals.browser } },
+  tseslint.configs.recommended,
+  { plugins: { prettier: eslintPluginPrettier } },
+  { files: ["**/*.json"], plugins: { json }, language: "json/json", extends: ["json/recommended"] },
+  { files: ["**/*.json5"], plugins: { json }, language: "json/json5", extends: ["json/recommended"] },
+]);
