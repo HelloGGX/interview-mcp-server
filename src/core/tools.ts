@@ -27,7 +27,7 @@ export function registerTools(server: FastMCP) {
           "Absolute path to the PDF resume file that will be analyzed to generate relevant interview questions"
         ),
       position: z
-        .enum(["frontend", "backend", "test"])
+        .enum(["frontend", "backend", "test", "ui", "ux"])
         .describe(
           "The target position type for the interview: frontend developer, backend developer, or test engineer"
         ),
@@ -182,12 +182,12 @@ export function registerTools(server: FastMCP) {
         // 将评估报告写入文件
         await fs.writeFile(evaluationFilePath, formattedText, "utf-8");
 
-      return {
-        content: [
-          {
-            type: "text",
-            text: `评估报告生成成功！文件已保存到: ${evaluationFilePath}`,
-          },
+        return {
+          content: [
+            {
+              type: "text",
+              text: `评估报告生成成功！文件已保存到: ${evaluationFilePath}`,
+            },
           ],
         };
       } catch {
