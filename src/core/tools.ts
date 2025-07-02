@@ -7,6 +7,7 @@ import { EVALUATE, GENERATE_QUESTION } from "./prompts.js";
 import { generateText } from "ai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import dotenv from "dotenv";
+import { exec } from "child_process";
 
 // 加载环境变量
 dotenv.config();
@@ -196,6 +197,49 @@ export function registerTools(server: FastMCP) {
             {
               type: "text",
               text: "评估报告生成失败，请检查文件路径和格式",
+            },
+          ],
+        };
+      }
+    },
+  });
+
+  server.addTool({
+    name: "record-interview",
+    description: "When the user mentions to start an interview, use this tool to record the interview conversation. Use this tool when mentioning /record",
+    parameters: z.object({}),
+    execute: async () => {
+      try {
+        // 获取recorder.html文件的相对路径
+        const htmlPath = path.resolve(__dirname, "../recorder.html");
+        // 打开浏览器
+        let openCommand;
+        if (process.platform === "darwin") {
+          openCommand = `open ${htmlPath}`;
+        } else if (process.platform === "win32") {
+          openCommand = `start ${htmlPath}`;
+        } else {
+          openCommand = `xdg-open ${htmlPath}`;
+        }
+        exec(openCommand, (error) => {
+          if (error) {
+            console.error("打开浏览器失败:", error);
+          }
+        });
+        return {
+          content: [
+            {
+              type: "text",
+              text: `已启动录音界面，浏览器窗口已打开，录音已自动开始。完成后点击"结束录音"按钮保存录音文件。`,
+            },
+          ],
+        };
+      } catch {
+        return {
+          content: [
+            {
+              type: "text",
+              text: "打开浏览器失败，请检查浏览器是否已安装",
             },
           ],
         };

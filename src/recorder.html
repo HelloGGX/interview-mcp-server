@@ -1,0 +1,563 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>面试录音</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .recording {
+      color: #ef4444;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+  <div class="w-full max-w-md bg-white rounded-xl shadow-md overflow-hidden">
+    <div class="p-6">
+      <h1 class="text-xl font-semibold text-gray-900 mb-4">面试录音</h1>
+      
+      <div class="bg-gray-50 p-4 rounded-lg mb-6">
+        <div class="flex items-center">
+          <span class="text-sm text-gray-500 mr-2">状态:</span>
+          <span id="status" class="text-sm font-medium text-gray-800">准备就绪</span>
+        </div>
+        
+        <!-- 音频波形可视化 -->
+        <div class="mt-3">
+          <canvas id="waveform" class="w-full h-16 bg-white rounded border border-gray-200"></canvas>
+        </div>
+      </div>
+      
+      <div class="flex flex-wrap gap-3 mb-6">
+        <button id="startBtn" class="flex-1 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500">录音</button>
+        <button id="pauseBtn" disabled class="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-50 disabled:cursor-not-allowed">暂停</button>
+        <button id="resumeBtn" disabled class="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-50 disabled:cursor-not-allowed">继续</button>
+        <button id="stopBtn" disabled class="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed">保存</button>
+        <button id="resetBtn" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400">重置</button>
+      </div>
+      
+      <div id="recordingInfo" class="text-sm font-medium text-gray-700 mb-4"></div>
+      <div id="saveInfo" class="text-sm text-green-600"></div>
+    </div>
+  </div>
+
+  <script>
+    
+    let mediaRecorder;
+    let audioChunks = [];
+    let isRecording = false;
+    let isPaused = false;
+    let startTime;
+    let elapsedTime = 0;
+    let timer;
+    let audioContext;
+    let analyser;
+    let source;
+    let animationId;
+    let recordingStream; // 添加变量保存录音流
+    
+    const statusEl = document.getElementById('status');
+    const startBtn = document.getElementById('startBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const resumeBtn = document.getElementById('resumeBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const recordingInfo = document.getElementById('recordingInfo');
+    const saveInfo = document.getElementById('saveInfo');
+    const waveformCanvas = document.getElementById('waveform');
+    const waveformCtx = waveformCanvas.getContext('2d');
+    
+    // 设置canvas尺寸
+    function setupCanvas() {
+      waveformCanvas.width = waveformCanvas.offsetWidth;
+      waveformCanvas.height = waveformCanvas.offsetHeight;
+    }
+    
+    // 初始化
+    window.addEventListener('resize', setupCanvas);
+    setupCanvas();
+    
+    // 设置音频分析器
+    function setupAudioProcessor(stream) {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      analyser = audioContext.createAnalyser();
+      analyser.fftSize = 2048;
+      
+      // 创建源
+      source = audioContext.createMediaStreamSource(stream);
+      
+      // 创建低通滤波器 - 过滤高频噪音
+      const lowPassFilter = audioContext.createBiquadFilter();
+      lowPassFilter.type = "lowpass";
+      lowPassFilter.frequency.value = 3000; // 人声主要在300-3000Hz范围内
+      
+      // 创建高通滤波器 - 过滤低频噪音
+      const highPassFilter = audioContext.createBiquadFilter();
+      highPassFilter.type = "highpass";
+      highPassFilter.frequency.value = 85; // 过滤低于85Hz的噪音
+      
+      // 创建动态压缩器 - 增强人声
+      const compressor = audioContext.createDynamicsCompressor();
+      compressor.threshold.value = -24;
+      compressor.knee.value = 30;
+      compressor.ratio.value = 12;
+      compressor.attack.value = 0.003;
+      compressor.release.value = 0.25;
+      
+      // 连接节点: 源 -> 高通滤波器 -> 低通滤波器 -> 压缩器 -> 分析器
+      source.connect(highPassFilter);
+      highPassFilter.connect(lowPassFilter);
+      lowPassFilter.connect(compressor);
+      compressor.connect(analyser);
+    }
+    
+    // 绘制波形
+    function drawWaveform() {
+      if (!analyser) return;
+      
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      analyser.getByteTimeDomainData(dataArray);
+      
+      // 清空画布
+      waveformCtx.fillStyle = 'white';
+      waveformCtx.fillRect(0, 0, waveformCanvas.width, waveformCanvas.height);
+      
+      // 噪音门限值 - 过滤低音量环境噪音
+      const noiseGate = 5; // 噪音门限值（0-128之间的值）
+      
+      // 绘制柱状波形
+      const barWidth = 2; // 柱子宽度
+      const barGap = 1;   // 柱子间隔
+      const totalWidth = barWidth + barGap;
+      const barCount = Math.floor(waveformCanvas.width / totalWidth);
+      const step = Math.floor(bufferLength / barCount);
+      
+      waveformCtx.fillStyle = 'black';
+      
+      for (let i = 0; i < barCount; i++) {
+        const dataIndex = i * step;
+        const value = dataArray[dataIndex];
+        
+        // 计算与中心值的偏差
+        let deviation = Math.abs(value - 128);
+        
+        // 应用噪音门限
+        if (deviation < noiseGate) {
+          deviation = 0;
+        }
+        
+        const percent = (value - 128) / 128; // 转换为 -1.0 到 1.0 之间的值
+        const height = Math.abs(percent) * (waveformCanvas.height / 2);
+        
+        const x = i * totalWidth;
+        const y = percent >= 0 
+          ? waveformCanvas.height / 2 - height 
+          : waveformCanvas.height / 2;
+        
+        waveformCtx.fillRect(x, y, barWidth, height);
+      }
+      
+      if (isRecording && !isPaused) {
+        animationId = requestAnimationFrame(drawWaveform);
+      }
+    }
+    
+    // 更新录音时间
+    function updateRecordingTime() {
+      if (isRecording && !isPaused) {
+        const now = new Date();
+        const elapsed = Math.floor((now - startTime) / 1000) + elapsedTime;
+        const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+        const seconds = (elapsed % 60).toString().padStart(2, '0');
+        recordingInfo.textContent = `录音时长: ${minutes}:${seconds}`;
+      }
+    }
+    
+    // 创建WAV文件
+    function createWavFile(audioChunks) {
+      return new Promise(resolve => {
+        // 创建音频上下文
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        // 创建临时Blob
+        const tempBlob = new Blob(audioChunks, { type: 'audio/webm; codecs=opus' });
+        
+        // 读取Blob为ArrayBuffer
+        const fileReader = new FileReader();
+        fileReader.onload = function() {
+          const arrayBuffer = this.result;
+          
+          // 解码音频数据
+          audioCtx.decodeAudioData(arrayBuffer).then(audioBuffer => {
+            // 获取音频参数
+            const numberOfChannels = audioBuffer.numberOfChannels;
+            const sampleRate = audioBuffer.sampleRate;
+            const length = audioBuffer.length;
+            
+            // 降采样处理 - 如果采样率高于16kHz，则降低到16kHz
+            let targetSampleRate = 16000;
+            let targetLength = length;
+            let targetAudioBuffer = audioBuffer;
+            
+            if (sampleRate > targetSampleRate) {
+              const ratio = targetSampleRate / sampleRate;
+              targetLength = Math.round(length * ratio);
+              const offlineCtx = new OfflineAudioContext(numberOfChannels, targetLength, targetSampleRate);
+              const source = offlineCtx.createBufferSource();
+              source.buffer = audioBuffer;
+              source.connect(offlineCtx.destination);
+              source.start();
+              
+              // 使用离线上下文进行降采样
+              offlineCtx.startRendering().then(renderedBuffer => {
+                targetAudioBuffer = renderedBuffer;
+                processAudioData(targetAudioBuffer, targetSampleRate);
+              }).catch(err => {
+                console.error('降采样失败:', err);
+                processAudioData(audioBuffer, sampleRate);
+              });
+            } else {
+              processAudioData(audioBuffer, sampleRate);
+            }
+            
+            // 处理音频数据并创建WAV文件
+            function processAudioData(buffer, rate) {
+              const channels = buffer.numberOfChannels;
+              const length = buffer.length;
+              
+              // 静音检测和去除 - 检测音量低于阈值的部分
+              const silenceThreshold = 0.01; // 静音阈值
+              let audioData = [];
+              let isSilence = true;
+              let silenceCounter = 0;
+              
+              // 获取所有通道的数据
+              for (let i = 0; i < length; i++) {
+                let sum = 0;
+                for (let channel = 0; channel < channels; channel++) {
+                  const channelData = buffer.getChannelData(channel);
+                  sum += Math.abs(channelData[i]);
+                }
+                
+                // 计算平均振幅
+                const avgAmplitude = sum / channels;
+                
+                // 检测是否为静音
+                if (avgAmplitude < silenceThreshold) {
+                  if (!isSilence) {
+                    silenceCounter++;
+                    // 如果连续静音超过0.5秒，则标记为静音段
+                    if (silenceCounter > rate * 0.5) {
+                      isSilence = true;
+                      silenceCounter = 0;
+                    }
+                  }
+                } else {
+                  isSilence = false;
+                  silenceCounter = 0;
+                }
+                
+                // 如果不是静音段或者是静音段但需要保留一些静音（避免声音突变）
+                if (!isSilence || silenceCounter < rate * 0.2) {
+                  for (let channel = 0; channel < channels; channel++) {
+                    const channelData = buffer.getChannelData(channel);
+                    audioData.push(channelData[i]);
+                  }
+                }
+              }
+              
+              // 转换为16位PCM
+              const pcmData = new Int16Array(audioData.length);
+              for (let i = 0; i < audioData.length; i++) {
+                const s = Math.max(-1, Math.min(1, audioData[i]));
+                pcmData[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+              }
+              
+              // 创建WAV文件头
+              const wavBuffer = createWavHeader(pcmData.length / channels, channels, rate);
+              
+              // 合并头部和数据
+              const wavBlob = new Blob([wavBuffer, pcmData], { type: 'audio/wav' });
+              resolve(wavBlob);
+            }
+          }).catch(err => {
+            console.error('解码音频失败:', err);
+            // 如果解码失败，返回原始Blob
+            resolve(tempBlob);
+          });
+        };
+        
+        fileReader.readAsArrayBuffer(tempBlob);
+      });
+    }
+    
+    // 创建WAV文件头
+    function createWavHeader(dataLength, numChannels, sampleRate) {
+      const bytesPerSample = 2; // 16位PCM
+      const blockAlign = numChannels * bytesPerSample;
+      const byteRate = sampleRate * blockAlign;
+      const dataSize = dataLength * blockAlign;
+      
+      const buffer = new ArrayBuffer(44);
+      const view = new DataView(buffer);
+      
+      // RIFF标识
+      writeString(view, 0, 'RIFF');
+      // 文件长度
+      view.setUint32(4, 36 + dataSize, true);
+      // WAVE标识
+      writeString(view, 8, 'WAVE');
+      // fmt子块标识
+      writeString(view, 12, 'fmt ');
+      // fmt子块长度
+      view.setUint32(16, 16, true);
+      // 音频格式（PCM = 1）
+      view.setUint16(20, 1, true);
+      // 通道数
+      view.setUint16(22, numChannels, true);
+      // 采样率
+      view.setUint32(24, sampleRate, true);
+      // 字节率
+      view.setUint32(28, byteRate, true);
+      // 块对齐
+      view.setUint16(32, blockAlign, true);
+      // 每个样本的位数
+      view.setUint16(34, bytesPerSample * 8, true);
+      // data子块标识
+      writeString(view, 36, 'data');
+      // data子块长度
+      view.setUint32(40, dataSize, true);
+      
+      return buffer;
+    }
+    
+    // 写入字符串到DataView
+    function writeString(view, offset, string) {
+      for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+      }
+    }
+    
+    // 开始录音
+    startBtn.addEventListener('click', async () => {
+      try {
+        saveInfo.innerHTML = '';
+        // 降低采样率，使用单声道录音
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: {
+            channelCount: 1,           // 单声道
+            sampleRate: 16000,         // 降低采样率到16kHz (足够人声)
+            echoCancellation: true,    // 回声消除
+            noiseSuppression: true,    // 噪声抑制
+            autoGainControl: true      // 自动增益控制
+          } 
+        });
+        recordingStream = stream;
+        
+        // 设置MediaRecorder选项
+        const options = {
+          audioBitsPerSecond: 64000,   // 降低比特率到64kbps
+          mimeType: 'audio/webm;codecs=opus' // 使用opus编码
+        };
+        
+        mediaRecorder = new MediaRecorder(stream, options);
+        
+        // 使用新的音频处理函数
+        setupAudioProcessor(stream);
+        
+        mediaRecorder.ondataavailable = (event) => {
+          audioChunks.push(event.data);
+        };
+        
+        mediaRecorder.onstop = async () => {
+          // 使用新的WAV文件创建函数
+          const audioBlob = await createWavFile(audioChunks);
+          
+          // 直接保存到本地，不经过服务器
+          const audioUrl = URL.createObjectURL(audioBlob);
+          const downloadLink = document.createElement('a');
+          downloadLink.href = audioUrl;
+          const now = new Date();
+          const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}`;
+          const fileName = `interview_${timestamp}.wav`;
+          downloadLink.download = fileName;
+          
+          // 添加到页面并触发点击
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          
+          // 清理
+          setTimeout(() => {
+            document.body.removeChild(downloadLink);
+            URL.revokeObjectURL(audioUrl);
+          }, 100);
+          
+          statusEl.textContent = '录音已保存到本地';
+          saveInfo.innerHTML = `<p>录音已成功保存到本地: ${fileName}</p>`;
+        };
+        
+        audioChunks = [];
+        mediaRecorder.start(1000);
+        isRecording = true;
+        isPaused = false;
+        startTime = new Date();
+        elapsedTime = 0;
+        
+        statusEl.textContent = '正在录音...';
+        statusEl.classList.add('recording');
+        
+        // 录音按钮置灰
+        startBtn.disabled = true;
+        startBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        pauseBtn.disabled = false;
+        stopBtn.disabled = false;
+        
+        timer = setInterval(updateRecordingTime, 1000);
+        updateRecordingTime();
+        
+        // 开始绘制波形
+        drawWaveform();
+      } catch (error) {
+        console.error('无法访问麦克风:', error);
+        statusEl.textContent = '无法访问麦克风';
+      }
+    });
+    
+    // 暂停录音
+    pauseBtn.addEventListener('click', () => {
+      if (mediaRecorder && isRecording && !isPaused) {
+        mediaRecorder.pause();
+        isPaused = true;
+        
+        const now = new Date();
+        elapsedTime += Math.floor((now - startTime) / 1000);
+        
+        statusEl.textContent = '录音已暂停';
+        statusEl.classList.remove('recording');
+        
+        pauseBtn.disabled = true;
+        resumeBtn.disabled = false;
+        
+        clearInterval(timer);
+      }
+    });
+    
+    // 继续录音
+    resumeBtn.addEventListener('click', () => {
+      if (mediaRecorder && isRecording && isPaused) {
+        mediaRecorder.resume();
+        isPaused = false;
+        startTime = new Date();
+        
+        statusEl.textContent = '正在录音...';
+        statusEl.classList.add('recording');
+        
+        pauseBtn.disabled = false;
+        resumeBtn.disabled = true;
+        
+        timer = setInterval(updateRecordingTime, 1000);
+        
+        // 恢复波形绘制
+        drawWaveform();
+      }
+    });
+    
+    // 重置函数
+    function resetRecorder() {
+      // 如果正在录音，需要先停止但不触发下载
+      if (mediaRecorder && isRecording) {
+        // 临时移除 onstop 事件处理器
+        const originalOnStop = mediaRecorder.onstop;
+        mediaRecorder.onstop = null;
+        
+        // 停止录音
+        mediaRecorder.stop();
+        clearInterval(timer);
+        
+        // 如果有媒体流，关闭它
+        if (recordingStream) {
+          recordingStream.getTracks().forEach(track => track.stop());
+        }
+      }
+      
+      // 重置所有状态
+      audioChunks = [];
+      isRecording = false;
+      isPaused = false;
+      elapsedTime = 0;
+      
+      // 重置UI
+      statusEl.textContent = '准备就绪';
+      statusEl.classList.remove('recording');
+      recordingInfo.textContent = '';
+      saveInfo.innerHTML = '';
+     
+       
+      // 重置按钮状态
+      startBtn.disabled = false;
+      pauseBtn.disabled = true;
+      resumeBtn.disabled = true;
+      stopBtn.disabled = true;
+      startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      
+      // 停止波形动画
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+      
+      // 清空波形
+      if (waveformCtx) {
+        waveformCtx.fillStyle = 'white';
+        waveformCtx.fillRect(0, 0, waveformCanvas.width, waveformCanvas.height);
+      }
+      
+      // 关闭音频上下文
+      if (audioContext && audioContext.state !== 'closed') {
+        if (source) {
+          source.disconnect();
+        }
+      }
+    }
+    
+    // 重置按钮事件
+    resetBtn.addEventListener('click', resetRecorder);
+    
+    // 停止录音
+    stopBtn.addEventListener('click', () => {
+      if (mediaRecorder && isRecording) {
+        mediaRecorder.stop();
+        
+        // 停止所有音频轨道
+        if (recordingStream) {
+          recordingStream.getTracks().forEach(track => track.stop());
+        }
+        
+        isRecording = false;
+        isPaused = false;
+        
+        statusEl.textContent = '录音已结束';
+        statusEl.classList.remove('recording');
+        
+        startBtn.disabled = false;
+        pauseBtn.disabled = true;
+        resumeBtn.disabled = true;
+        stopBtn.disabled = true;
+        startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        clearInterval(timer);
+        
+        // 重置录音时长显示
+        recordingInfo.textContent = '';
+      }
+    });
+    
+    // 自动开始录音
+    window.addEventListener('load', () => {
+      startBtn.click();
+    });
+  </script>
+</body>
+</html>
+  
