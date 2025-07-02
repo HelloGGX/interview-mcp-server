@@ -8,6 +8,9 @@ import { generateText } from "ai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import dotenv from "dotenv";
 import { exec } from "child_process";
+import { fileURLToPath } from "url";
+import express, { Request, Response } from "express";
+import http from "http";
 
 // 加载环境变量
 dotenv.config();
@@ -206,40 +209,90 @@ export function registerTools(server: FastMCP) {
 
   server.addTool({
     name: "record-interview",
-    description: "When the user mentions to start an interview, use this tool to record the interview conversation. Use this tool when mentioning /record",
+    description:
+      "When the user mentions to start an interview, use this tool to record the interview conversation. Use this tool when mentioning /record",
     parameters: z.object({}),
     execute: async () => {
       try {
-        // 获取recorder.html文件的相对路径
-        const htmlPath = path.resolve(__dirname, "../recorder.html");
-        // 打开浏览器
-        let openCommand;
-        if (process.platform === "darwin") {
-          openCommand = `open ${htmlPath}`;
-        } else if (process.platform === "win32") {
-          openCommand = `start ${htmlPath}`;
-        } else {
-          openCommand = `xdg-open ${htmlPath}`;
-        }
-        exec(openCommand, (error) => {
-          if (error) {
-            console.error("打开浏览器失败:", error);
+        // 创建Express应用
+        const app = express();
+        const httpServer = http.createServer(app);
+
+        // 解析JSON请求体
+        app.use(express.json());
+        app.use(express.urlencoded({ extended: true }));
+
+        // 获取当前文件的目录
+        const __filename = fileURLToPath(import.meta.url);
+        const __dirname = path.dirname(__filename);
+
+        // 静态文件服务 - 提供recorder目录下的文件
+        const recorderPath = path.resolve(__dirname, "./recorder");
+        app.use(express.static(recorderPath));
+
+        // API端点 - 接收录音数据
+        app.post("/api/save-recording", async (req: Request, res: Response) => {
+          try {
+            const { transcript, timestamp } = req.body;
+
+            // 生成文件名
+            const date = new Date(timestamp || Date.now());
+            const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}-${String(date.getHours()).padStart(2, "0")}-${String(date.getMinutes()).padStart(2, "0")}`;
+
+            // 保存转录文本
+            if (transcript) {
+              const transcriptFileName = `interview_conversation_${formattedDate}.md`;
+              const transcriptPath = path.join(process.cwd(), transcriptFileName);
+
+              const content = `# 面试对话记录
+              
+              ## 面试时间
+              ${date.toLocaleString("zh-CN")}
+
+              ## 对话内容
+              ${transcript}
+              `;
+
+              await fs.writeFile(transcriptPath, content, "utf-8");
+              console.error(`转录文件已保存: ${transcriptPath}`);
+            }
+
+            res.json({
+              success: true,
+              message: "录音数据已保存",
+              transcriptPath: transcript ? `interview_conversation_${formattedDate}.md` : null,
+            });
+          } catch (error) {
+            console.error("保存录音数据失败:", error);
+            res.status(500).json({ success: false, message: "保存失败" });
           }
         });
+
+        // 启动服务器
+        const port = 3002;
+        httpServer.listen(port, () => {
+          console.error(`录音服务器已启动: http://localhost:${port}`);
+
+          // 打开浏览器
+          const url = `http://localhost:${port}`;
+          exec(`start ${url}`);
+        });
+
         return {
           content: [
             {
               type: "text",
-              text: `已启动录音界面，浏览器窗口已打开，录音已自动开始。完成后点击"结束录音"按钮保存录音文件。`,
+              text: `录音服务器已启动在 http://localhost:${port}，浏览器窗口已打开。请在网页中进行录音操作，录音结束后转录内容将自动保存为markdown文件。`,
             },
           ],
         };
-      } catch {
+      } catch (error) {
+        console.error("启动录音服务器失败:", error);
         return {
           content: [
             {
               type: "text",
-              text: "打开浏览器失败，请检查浏览器是否已安装",
+              text: "启动录音服务器失败，请检查端口是否被占用或权限是否足够",
             },
           ],
         };
