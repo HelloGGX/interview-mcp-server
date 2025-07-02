@@ -3,6 +3,7 @@
 const startBtn = document.getElementById('startBtn');
 const stopBtn = document.getElementById('stopBtn');
 const clearBtn = document.getElementById('clearBtn');
+const exportBtn = document.getElementById('exportBtn');
 const soundClips = document.getElementById('sound-clips');
 const textArea = document.getElementById('results');
 
@@ -15,6 +16,11 @@ clearBtn.onclick = function() {
   resultList = [];
   textArea.value = getDisplayResult();
   textArea.scrollTop = textArea.scrollHeight;  // 自动滚动到底部
+};
+
+// 导出按钮事件处理
+exportBtn.onclick = function() {
+  exportToMarkdown();
 };
 
 /**
@@ -42,6 +48,71 @@ function getDisplayResult() {
     ans += '' + i + ': ' + lastResult + '\n';
   }
   return ans;
+}
+
+/**
+ * 导出转录结果为Markdown格式
+ */
+function exportToMarkdown() {
+  const results = getDisplayResult();
+  
+  if (results.trim() === '') {
+    alert('没有转录结果可以导出！');
+    return;
+  }
+
+  // 生成Markdown内容
+  const timestamp = new Date().toLocaleString('zh-CN');
+  let markdownContent = `# 语音识别转录结果\n\n`;
+  markdownContent += `**导出时间**: ${timestamp}\n\n`;
+  markdownContent += `## 转录内容\n\n`;
+  
+  // 解析结果并格式化为Markdown
+  const lines = results.split('\n').filter(line => line.trim() !== '');
+  
+  lines.forEach((line) => {
+    if (line.includes('Speech detected')) {
+      // 处理语音检测标记
+      const match = line.match(/^(\d+): (.+)/);
+      if (match) {
+        markdownContent += `### 段落 ${parseInt(match[1]) + 1}\n\n`;
+        markdownContent += `*${match[2]}*\n\n`;
+      }
+    } else if (line.includes('Duration:') && line.includes('Result:')) {
+      // 处理包含持续时间和识别结果的行
+      const parts = line.split('Result: ');
+      if (parts.length === 2) {
+        const durationPart = parts[0].replace(/^, /, '').trim();
+        const resultPart = parts[1].trim();
+        markdownContent += `**${durationPart}**\n\n`;
+        markdownContent += `> ${resultPart}\n\n`;
+      }
+    } else if (line.includes('Duration:')) {
+      // 处理只有持续时间的行
+      const cleanLine = line.replace(/^, /, '').trim();
+      markdownContent += `**${cleanLine}**\n\n`;
+    } else {
+      // 其他内容
+      const cleanLine = line.replace(/^, /, '').trim();
+      if (cleanLine) {
+        markdownContent += `${cleanLine}\n\n`;
+      }
+    }
+  });
+
+  markdownContent += `---\n\n`;
+  markdownContent += `*由智能语音识别系统生成 - ${timestamp}*\n`;
+
+  // 创建下载
+  const blob = new Blob([markdownContent], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `语音转录结果_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.md`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 // 全局声明 - WebAssembly模块对象，由sherpa-onnx库提供
@@ -149,9 +220,35 @@ Module.locateFile = function(path, scriptDirectory = '') {
 Module.setStatus = function(status) {
   console.log(`status ${status}`);
   const statusElement = document.getElementById('status');
+  const progressBar = document.getElementById('progressBar');
+  const progressText = document.getElementById('progressText');
   
-  if (status === 'Running...') {
-    status = 'Model downloaded. Initializing recognizer...';
+  // 检查是否是下载进度信息
+  if (status.match(/Downloading data... \((\d+)\/(\d+)\)/)) {
+    const match = status.match(/Downloading data... \((\d+)\/(\d+)\)/);
+    const loaded = parseInt(match[1]);
+    const total = parseInt(match[2]);
+    const percentage = Math.min(Math.round((loaded / total) * 100), 100);
+    // 更新进度条
+    progressBar.style.width = percentage + '%';
+    progressText.textContent = `正在加载模型... ${percentage}%`;
+    status = `正在下载模型 (${loaded}/${total})`;
+  } else if (status === 'Downloading data...') {
+    progressText.textContent = '准备下载模型...';
+    progressBar.style.width = '5%';
+  } else if (status === 'Running...') {
+    status = '模型下载完成，正在初始化识别器...';
+    progressBar.style.width = '90%';
+    progressText.textContent = '正在初始化识别器...';
+  } else if (status === '') {
+    // 加载完成
+    progressBar.style.width = '100%';
+    progressText.textContent = '模型加载完成！';
+    
+    // 2秒后隐藏进度信息
+    setTimeout(() => {
+      progressText.textContent = '准备就绪，可以开始录音';
+    }, 2000);
   }
   
   statusElement.textContent = status;
@@ -189,7 +286,7 @@ Module.onRuntimeInitialized = function() {
 
 /**
  * 处理音频数据的主函数
- * @param {AudioProcessingEvent} e - 音频处理事件
+ *
  */
 function processAudioData(e) {
   // 获取音频样本并降采样
