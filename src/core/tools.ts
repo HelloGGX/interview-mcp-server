@@ -211,8 +211,10 @@ export function registerTools(server: FastMCP) {
     name: "record-interview",
     description:
       "When the user mentions to start an interview, use this tool to record the interview conversation. Use this tool when mentioning /record",
-    parameters: z.object({}),
-    execute: async () => {
+    parameters: z.object({
+      absolutePathToPdfFile: z.string().describe("Absolute path to the resume/CV file"),
+    }),
+    execute: async (params) => {
       try {
         // 创建Express应用
         const app = express();
@@ -239,10 +241,14 @@ export function registerTools(server: FastMCP) {
             const date = new Date(timestamp || Date.now());
             const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}-${String(date.getHours()).padStart(2, "0")}-${String(date.getMinutes()).padStart(2, "0")}`;
 
+            let transcriptPath: string | null = null;
+
             // 保存转录文本
             if (transcript) {
               const transcriptFileName = `interview_conversation_${formattedDate}.md`;
-              const transcriptPath = path.join(process.cwd(), transcriptFileName);
+              // 获取PDF文件所在目录，保存转录文件到同级目录
+              const pdfDir = path.dirname(params.absolutePathToPdfFile);
+              transcriptPath = path.join(pdfDir, transcriptFileName);
 
               const content = `# 面试对话记录
               
@@ -260,7 +266,7 @@ export function registerTools(server: FastMCP) {
             res.json({
               success: true,
               message: "录音数据已保存",
-              transcriptPath: transcript ? `interview_conversation_${formattedDate}.md` : null,
+              transcriptPath: transcriptPath,
             });
           } catch (error) {
             console.error("保存录音数据失败:", error);

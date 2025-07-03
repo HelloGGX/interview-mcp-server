@@ -1,157 +1,174 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>智能语音识别 - Sherpa-ONNX WebAssembly</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      .loading {
+        opacity: 0.6;
+        pointer-events: none;
+      }
 
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>智能语音识别 - Sherpa-ONNX WebAssembly</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    .loading {
-      opacity: 0.6;
-      pointer-events: none;
-    }
-    
-    .gradient-bg {
-      background: #1a1a1a; /* 深黑色背景 */
-    }
-    
-    .glass-effect {
-      background: rgba(245, 245, 245, 0.95); /* 浅灰色半透明背景 */
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-    
-    .recording {
-      color: #333333; /* 深灰色 */
-      font-weight: 600;
-      animation: pulse 2s infinite;
-    }
-    
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.7; }
-    }
-    
-    .clip {
-      background: #f5f5f5; /* 浅灰色 */
-      padding: 1rem;
-      margin-bottom: 0.75rem;
-      border-radius: 0.5rem;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-      border: 1px solid #e0e0e0;
-      transition: all 0.2s ease;
-    }
-    
-    .clip:hover {
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      transform: translateY(-1px);
-    }
-    
-    .clip audio {
-      width: 100%;
-      margin-bottom: 0.5rem;
-      border-radius: 0.25rem;
-    }
-    
-    .clip p {
-      margin: 0.5rem 0;
-      font-size: 0.875rem;
-      color: #4a4a4a; /* 中灰色 */
-      cursor: pointer;
-      word-break: break-all;
-    }
-    
-    .clip p:hover {
-      color: #1a1a1a; /* 深黑色 */
-    }
-    
-    .clip .delete {
-      background: #333333; /* 深灰色 */
-      color: white;
-      border: none;
-      padding: 0.25rem 0.75rem;
-      border-radius: 0.25rem;
-      font-size: 0.75rem;
-      cursor: pointer;
-      transition: background 0.2s ease;
-    }
-    
-    .clip .delete:hover {
-      background: #1a1a1a; /* 深黑色 */
-    }
-  </style>
-</head>
+      .gradient-bg {
+        background: #1a1a1a; /* 深黑色背景 */
+      }
 
-<body class="gradient-bg min-h-screen flex items-center justify-center p-4">
-  <div class="w-full max-w-4xl glass-effect rounded-2xl shadow-2xl overflow-hidden">
-    <!-- 头部状态区域 -->
-    <div class="p-6 border-b border-gray-200">
-      <h1 class="text-2xl font-bold text-gray-800 mb-4 text-center">智能语音识别系统</h1>
-      <div class="bg-gray-100 p-4 rounded-lg border border-gray-300">
-        <div class="flex items-center justify-center mb-3">
-          <span class="text-sm text-gray-600 mr-2">状态:</span>
-          <span id="status" class="text-sm font-medium text-gray-800">正在初始化...</span>
+      .glass-effect {
+        background: rgba(245, 245, 245, 0.95); /* 浅灰色半透明背景 */
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .recording {
+        color: #333333; /* 深灰色 */
+        font-weight: 600;
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.7;
+        }
+      }
+
+      .clip {
+        background: #f5f5f5; /* 浅灰色 */
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        border-radius: 0.5rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e0e0e0;
+        transition: all 0.2s ease;
+      }
+
+      .clip:hover {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transform: translateY(-1px);
+      }
+
+      .clip audio {
+        width: 100%;
+        margin-bottom: 0.5rem;
+        border-radius: 0.25rem;
+      }
+
+      .clip p {
+        margin: 0.5rem 0;
+        font-size: 0.875rem;
+        color: #4a4a4a; /* 中灰色 */
+        cursor: pointer;
+        word-break: break-all;
+      }
+
+      .clip p:hover {
+        color: #1a1a1a; /* 深黑色 */
+      }
+
+      .clip .delete {
+        background: #333333; /* 深灰色 */
+        color: white;
+        border: none;
+        padding: 0.25rem 0.75rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+        cursor: pointer;
+        transition: background 0.2s ease;
+      }
+
+      .clip .delete:hover {
+        background: #1a1a1a; /* 深黑色 */
+      }
+    </style>
+  </head>
+
+  <body class="gradient-bg min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-4xl glass-effect rounded-2xl shadow-2xl overflow-hidden">
+      <!-- 头部状态区域 -->
+      <div class="p-6 border-b border-gray-200">
+        <h1 class="text-2xl font-bold text-gray-800 mb-4 text-center">智能语音识别系统</h1>
+        <div class="bg-gray-100 p-4 rounded-lg border border-gray-300">
+          <div class="flex items-center justify-center mb-3">
+            <span class="text-sm text-gray-600 mr-2">状态:</span>
+            <span id="status" class="text-sm font-medium text-gray-800">正在初始化...</span>
+          </div>
+          <!-- 进度条容器 -->
+          <div id="progressContainer" class="w-full bg-gray-300 rounded-full h-2.5 mb-2">
+            <div
+              id="progressBar"
+              class="bg-gray-700 h-2.5 rounded-full transition-all duration-300 ease-out"
+              style="width: 0%"
+            ></div>
+          </div>
+          <div id="progressText" class="text-xs text-gray-600 text-center">准备加载模型...</div>
         </div>
-        <!-- 进度条容器 -->
-        <div id="progressContainer" class="w-full bg-gray-300 rounded-full h-2.5 mb-2">
-          <div id="progressBar" class="bg-gray-700 h-2.5 rounded-full transition-all duration-300 ease-out" style="width: 0%"></div>
+      </div>
+
+      <!-- 主内容区域 -->
+      <div id="singleAudioContent" class="tab-content loading p-6">
+        <!-- 控制按钮区域 -->
+        <div class="flex flex-wrap gap-3 mb-6 justify-center">
+          <button
+            id="startBtn"
+            disabled
+            class="px-6 py-3 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium min-w-[100px]"
+          >
+            开始录音
+          </button>
+          <button
+            id="stopBtn"
+            disabled
+            class="px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-black transition-colors focus:outline-none focus:ring-2 focus:ring-gray-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium min-w-[100px]"
+          >
+            停止录音
+          </button>
+          <button
+            id="clearBtn"
+            class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 font-medium min-w-[100px]"
+          >
+            清除记录
+          </button>
+          <button
+            id="exportBtn"
+            class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium min-w-[100px]"
+          >
+            导出对话
+          </button>
         </div>
-        <div id="progressText" class="text-xs text-gray-600 text-center">准备加载模型...</div>
+
+        <!-- 转录结果区域 -->
+        <div class="mb-6">
+          <div class="bg-gray-100 p-3 rounded-lg mb-3">
+            <h2 class="text-lg font-semibold text-gray-700">实时转录结果</h2>
+          </div>
+          <textarea
+            id="results"
+            rows="12"
+            placeholder="语音识别结果将在这里显示..."
+            readonly
+            class="w-full p-4 text-sm border border-gray-300 rounded-lg resize-vertical bg-gray-50 text-gray-700 font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-gray-400"
+          >
+          </textarea>
+        </div>
+
+        <!-- 音频片段区域 -->
+        <div class="bg-gray-100 p-4 rounded-lg">
+          <h3 class="text-lg font-semibold text-gray-700 mb-4">录音片段</h3>
+          <div id="sound-clips" class="max-h-96 overflow-y-auto">
+            <p class="text-gray-500 text-center py-8">暂无录音片段</p>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- 主内容区域 -->
-    <div id="singleAudioContent" class="tab-content loading p-6">
-      <!-- 控制按钮区域 -->
-      <div class="flex flex-wrap gap-3 mb-6 justify-center">
-        <button id="startBtn" disabled 
-                class="px-6 py-3 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium min-w-[100px]">
-          开始录音
-        </button>
-        <button id="stopBtn" disabled 
-                class="px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-black transition-colors focus:outline-none focus:ring-2 focus:ring-gray-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium min-w-[100px]">
-          停止录音
-        </button>
-        <button id="clearBtn" 
-                class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 font-medium min-w-[100px]">
-          清除记录
-        </button>
-        <button id="exportBtn" 
-                class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium min-w-[100px]">
-          导出对话
-        </button>
-      </div>
-
-      <!-- 转录结果区域 -->
-      <div class="mb-6">
-        <div class="bg-gray-100 p-3 rounded-lg mb-3">
-          <h2 class="text-lg font-semibold text-gray-700">实时转录结果</h2>
-        </div>
-        <textarea id="results" 
-                  rows="12" 
-                  placeholder="语音识别结果将在这里显示..." 
-                  readonly 
-                  class="w-full p-4 text-sm border border-gray-300 rounded-lg resize-vertical bg-gray-50 text-gray-700 font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-gray-400">
-        </textarea>
-      </div>
-
-      <!-- 音频片段区域 -->
-      <div class="bg-gray-100 p-4 rounded-lg">
-        <h3 class="text-lg font-semibold text-gray-700 mb-4">录音片段</h3>
-        <div id="sound-clips" class="max-h-96 overflow-y-auto">
-          <p class="text-gray-500 text-center py-8">暂无录音片段</p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- JavaScript 库文件 -->
-  <script src="sherpa-onnx-wasm-main-vad-asr.js"></script>
-  <script src="sherpa-onnx-asr.js"></script>
-  <script src="sherpa-onnx-vad.js"></script>
-  <script src="app-vad-asr.js"></script>
-  
-</body>
-
+    <!-- JavaScript 库文件 -->
+    <script src="sherpa-onnx-wasm-main-vad-asr.js"></script>
+    <script src="sherpa-onnx-asr.js"></script>
+    <script src="sherpa-onnx-vad.js"></script>
+    <script src="app-vad-asr.js"></script>
+  </body>
 </html>

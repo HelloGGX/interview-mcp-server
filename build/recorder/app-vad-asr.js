@@ -1,25 +1,25 @@
 // This file copies and modifies code
 // DOM元素引用
-const startBtn = document.getElementById('startBtn');
-const stopBtn = document.getElementById('stopBtn');
-const clearBtn = document.getElementById('clearBtn');
-const exportBtn = document.getElementById('exportBtn');
-const soundClips = document.getElementById('sound-clips');
-const textArea = document.getElementById('results');
+const startBtn = document.getElementById("startBtn");
+const stopBtn = document.getElementById("stopBtn");
+const clearBtn = document.getElementById("clearBtn");
+const exportBtn = document.getElementById("exportBtn");
+const soundClips = document.getElementById("sound-clips");
+const textArea = document.getElementById("results");
 
 // 语音识别结果管理
-let lastResult = '';
+let lastResult = "";
 let resultList = [];
 
 // 清除按钮事件处理
-clearBtn.onclick = function() {
+clearBtn.onclick = function () {
   resultList = [];
   textArea.value = getDisplayResult();
-  textArea.scrollTop = textArea.scrollHeight;  // 自动滚动到底部
+  textArea.scrollTop = textArea.scrollHeight; // 自动滚动到底部
 };
 
 // 导出按钮事件处理
-exportBtn.onclick = function() {
+exportBtn.onclick = function () {
   exportToMarkdown();
 };
 
@@ -29,23 +29,23 @@ exportBtn.onclick = function() {
  */
 function getDisplayResult() {
   let i = 0;
-  let ans = '';
-  
+  let ans = "";
+
   for (let s in resultList) {
-    if (resultList[s] === '') {
+    if (resultList[s] === "") {
       continue;
     }
 
-    if (resultList[s] === 'Speech detected') {
-      ans += '' + i + ': ' + resultList[s];
+    if (resultList[s] === "Speech detected") {
+      ans += "" + i + ": " + resultList[s];
       i += 1;
     } else {
-      ans += ', ' + resultList[s] + '\n';
+      ans += ", " + resultList[s] + "\n";
     }
   }
 
   if (lastResult.length > 0) {
-    ans += '' + i + ': ' + lastResult + '\n';
+    ans += "" + i + ": " + lastResult + "\n";
   }
   return ans;
 }
@@ -55,45 +55,45 @@ function getDisplayResult() {
  */
 function exportToMarkdown() {
   const results = getDisplayResult();
-  
-  if (results.trim() === '') {
-    alert('没有转录结果可以导出！');
+
+  if (results.trim() === "") {
+    alert("没有转录结果可以导出！");
     return;
   }
 
   // 生成Markdown内容
-  const timestamp = new Date().toLocaleString('zh-CN');
+  const timestamp = new Date().toLocaleString("zh-CN");
   let markdownContent = `# 语音识别转录结果\n\n`;
   markdownContent += `**导出时间**: ${timestamp}\n\n`;
   markdownContent += `## 转录内容\n\n`;
-  
+
   // 解析结果并格式化为Markdown
-  const lines = results.split('\n').filter(line => line.trim() !== '');
-  
+  const lines = results.split("\n").filter((line) => line.trim() !== "");
+
   lines.forEach((line) => {
-    if (line.includes('Speech detected')) {
+    if (line.includes("Speech detected")) {
       // 处理语音检测标记
       const match = line.match(/^(\d+): (.+)/);
       if (match) {
         markdownContent += `### 段落 ${parseInt(match[1]) + 1}\n\n`;
         markdownContent += `*${match[2]}*\n\n`;
       }
-    } else if (line.includes('Duration:') && line.includes('Result:')) {
+    } else if (line.includes("Duration:") && line.includes("Result:")) {
       // 处理包含持续时间和识别结果的行
-      const parts = line.split('Result: ');
+      const parts = line.split("Result: ");
       if (parts.length === 2) {
-        const durationPart = parts[0].replace(/^, /, '').trim();
+        const durationPart = parts[0].replace(/^, /, "").trim();
         const resultPart = parts[1].trim();
         markdownContent += `**${durationPart}**\n\n`;
         markdownContent += `> ${resultPart}\n\n`;
       }
-    } else if (line.includes('Duration:')) {
+    } else if (line.includes("Duration:")) {
       // 处理只有持续时间的行
-      const cleanLine = line.replace(/^, /, '').trim();
+      const cleanLine = line.replace(/^, /, "").trim();
       markdownContent += `**${cleanLine}**\n\n`;
     } else {
       // 其他内容
-      const cleanLine = line.replace(/^, /, '').trim();
+      const cleanLine = line.replace(/^, /, "").trim();
       if (cleanLine) {
         markdownContent += `${cleanLine}\n\n`;
       }
@@ -103,16 +103,23 @@ function exportToMarkdown() {
   markdownContent += `---\n\n`;
   markdownContent += `*由智能语音识别系统生成 - ${timestamp}*\n`;
 
-  // 创建下载
-  const blob = new Blob([markdownContent], { type: 'text/markdown;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `语音转录结果_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.md`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  fetch("http://localhost:3002/api/save-recording", {
+    method: "POST",
+    body: JSON.stringify({
+      transcript: markdownContent,
+      timestamp: new Date().toISOString(),
+    }),
+  });
+  // // 创建下载
+  // const blob = new Blob([markdownContent], { type: 'text/markdown;charset=utf-8' });
+  // const url = URL.createObjectURL(blob);
+  // const link = document.createElement('a');
+  // link.href = url;
+  // link.download = `语音转录结果_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.md`;
+  // document.body.appendChild(link);
+  // link.click();
+  // document.body.removeChild(link);
+  // URL.revokeObjectURL(url);
 }
 
 // 全局声明 - WebAssembly模块对象，由sherpa-onnx库提供
@@ -122,14 +129,14 @@ function exportToMarkdown() {
 let audioCtx;
 let mediaStream;
 let expectedSampleRate = 16000;
-let recordSampleRate;  // 麦克风的采样率
-let recorder = null;   // 麦克风录音器
+let recordSampleRate; // 麦克风的采样率
+let recorder = null; // 麦克风录音器
 
 // 语音处理相关变量
-let vad = null;        // 语音活动检测器
-let buffer = null;     // 循环缓冲区
+let vad = null; // 语音活动检测器
+let buffer = null; // 循环缓冲区
 let recognizer = null; // 离线识别器
-let printed = false;   // 是否已打印语音检测状态
+let printed = false; // 是否已打印语音检测状态
 
 /**
  * 检查文件是否存在
@@ -156,53 +163,53 @@ function initOfflineRecognizer() {
   let config = {
     modelConfig: {
       debug: 1,
-      tokens: './tokens.txt',
+      tokens: "./tokens.txt",
     },
   };
 
   // 按优先级检查可用的模型文件并配置相应的识别器
-  if (fileExists('sense-voice.onnx') === 1) {
+  if (fileExists("sense-voice.onnx") === 1) {
     config.modelConfig.senseVoice = {
-      model: './sense-voice.onnx',
+      model: "./sense-voice.onnx",
       useInverseTextNormalization: 1,
     };
-  } else if (fileExists('whisper-encoder.onnx')) {
+  } else if (fileExists("whisper-encoder.onnx")) {
     config.modelConfig.whisper = {
-      encoder: './whisper-encoder.onnx',
-      decoder: './whisper-decoder.onnx',
+      encoder: "./whisper-encoder.onnx",
+      decoder: "./whisper-decoder.onnx",
     };
-  } else if (fileExists('transducer-encoder.onnx')) {
+  } else if (fileExists("transducer-encoder.onnx")) {
     config.modelConfig.transducer = {
-      encoder: './transducer-encoder.onnx',
-      decoder: './transducer-decoder.onnx',
-      joiner: './transducer-joiner.onnx',
+      encoder: "./transducer-encoder.onnx",
+      decoder: "./transducer-decoder.onnx",
+      joiner: "./transducer-joiner.onnx",
     };
-    config.modelConfig.modelType = 'transducer';
-  } else if (fileExists('nemo-transducer-encoder.onnx')) {
+    config.modelConfig.modelType = "transducer";
+  } else if (fileExists("nemo-transducer-encoder.onnx")) {
     config.modelConfig.transducer = {
-      encoder: './nemo-transducer-encoder.onnx',
-      decoder: './nemo-transducer-decoder.onnx',
-      joiner: './nemo-transducer-joiner.onnx',
+      encoder: "./nemo-transducer-encoder.onnx",
+      decoder: "./nemo-transducer-decoder.onnx",
+      joiner: "./nemo-transducer-joiner.onnx",
     };
-    config.modelConfig.modelType = 'nemo_transducer';
-  } else if (fileExists('paraformer.onnx')) {
+    config.modelConfig.modelType = "nemo_transducer";
+  } else if (fileExists("paraformer.onnx")) {
     config.modelConfig.paraformer = {
-      model: './paraformer.onnx',
+      model: "./paraformer.onnx",
     };
-  } else if (fileExists('telespeech.onnx')) {
-    config.modelConfig.telespeechCtc = './telespeech.onnx';
-  } else if (fileExists('moonshine-preprocessor.onnx')) {
+  } else if (fileExists("telespeech.onnx")) {
+    config.modelConfig.telespeechCtc = "./telespeech.onnx";
+  } else if (fileExists("moonshine-preprocessor.onnx")) {
     config.modelConfig.moonshine = {
-      preprocessor: './moonshine-preprocessor.onnx',
-      encoder: './moonshine-encoder.onnx',
-      uncachedDecoder: './moonshine-uncached-decoder.onnx',
-      cachedDecoder: './moonshine-cached-decoder.onnx'
+      preprocessor: "./moonshine-preprocessor.onnx",
+      encoder: "./moonshine-encoder.onnx",
+      uncachedDecoder: "./moonshine-uncached-decoder.onnx",
+      cachedDecoder: "./moonshine-cached-decoder.onnx",
     };
-  } else if (fileExists('dolphin.onnx')) {
-    config.modelConfig.dolphin = {model: './dolphin.onnx'};
+  } else if (fileExists("dolphin.onnx")) {
+    config.modelConfig.dolphin = { model: "./dolphin.onnx" };
   } else {
-    console.log('Please specify a model.');
-    alert('Please specify a model.');
+    console.log("Please specify a model.");
+    alert("Please specify a model.");
     return;
   }
 
@@ -211,18 +218,18 @@ function initOfflineRecognizer() {
 
 // WebAssembly模块配置
 // 定位文件路径的回调函数
-Module.locateFile = function(path, scriptDirectory = '') {
+Module.locateFile = function (path, scriptDirectory = "") {
   console.log(`path: ${path}, scriptDirectory: ${scriptDirectory}`);
   return scriptDirectory + path;
 };
 
 // 设置加载状态的回调函数
-Module.setStatus = function(status) {
+Module.setStatus = function (status) {
   console.log(`status ${status}`);
-  const statusElement = document.getElementById('status');
-  const progressBar = document.getElementById('progressBar');
-  const progressText = document.getElementById('progressText');
-  
+  const statusElement = document.getElementById("status");
+  const progressBar = document.getElementById("progressBar");
+  const progressText = document.getElementById("progressText");
+
   // 检查是否是下载进度信息
   if (status.match(/Downloading data... \((\d+)\/(\d+)\)/)) {
     const match = status.match(/Downloading data... \((\d+)\/(\d+)\)/);
@@ -230,55 +237,55 @@ Module.setStatus = function(status) {
     const total = parseInt(match[2]);
     const percentage = Math.min(Math.round((loaded / total) * 100), 100);
     // 更新进度条
-    progressBar.style.width = percentage + '%';
+    progressBar.style.width = percentage + "%";
     progressText.textContent = `正在加载模型... ${percentage}%`;
     status = `正在下载模型 (${loaded}/${total})`;
-  } else if (status === 'Downloading data...') {
-    progressText.textContent = '准备下载模型...';
-    progressBar.style.width = '5%';
-  } else if (status === 'Running...') {
-    status = '模型下载完成，正在初始化识别器...';
-    progressBar.style.width = '90%';
-    progressText.textContent = '正在初始化识别器...';
-  } else if (status === '') {
+  } else if (status === "Downloading data...") {
+    progressText.textContent = "准备下载模型...";
+    progressBar.style.width = "5%";
+  } else if (status === "Running...") {
+    status = "模型下载完成，正在初始化识别器...";
+    progressBar.style.width = "90%";
+    progressText.textContent = "正在初始化识别器...";
+  } else if (status === "") {
     // 加载完成
-    progressBar.style.width = '100%';
-    progressText.textContent = '模型加载完成！';
-    
+    progressBar.style.width = "100%";
+    progressText.textContent = "模型加载完成！";
+
     // 2秒后隐藏进度信息
     setTimeout(() => {
-      progressText.textContent = '准备就绪，可以开始录音';
+      progressText.textContent = "准备就绪，可以开始录音";
     }, 2000);
   }
-  
+
   statusElement.textContent = status;
-  
-  if (status === '') {
-    statusElement.style.display = 'none';
-    document.querySelectorAll('.tab-content').forEach((tabContentElement) => {
-      tabContentElement.classList.remove('loading');
+
+  if (status === "") {
+    statusElement.style.display = "none";
+    document.querySelectorAll(".tab-content").forEach((tabContentElement) => {
+      tabContentElement.classList.remove("loading");
     });
   } else {
-    statusElement.style.display = 'block';
-    document.querySelectorAll('.tab-content').forEach((tabContentElement) => {
-      tabContentElement.classList.add('loading');
+    statusElement.style.display = "block";
+    document.querySelectorAll(".tab-content").forEach((tabContentElement) => {
+      tabContentElement.classList.add("loading");
     });
   }
 };
 
 // WebAssembly运行时初始化完成后的回调
-Module.onRuntimeInitialized = function() {
-  console.log('WebAssembly runtime initialized!');
+Module.onRuntimeInitialized = function () {
+  console.log("WebAssembly runtime initialized!");
 
   startBtn.disabled = false;
 
   // 初始化语音活动检测器
   vad = createVad(Module);
-  console.log('VAD (Voice Activity Detector) created!', vad);
+  console.log("VAD (Voice Activity Detector) created!", vad);
 
   // 初始化循环缓冲区 (30秒的16kHz音频)
   buffer = new CircularBuffer(30 * 16000, Module);
-  console.log('CircularBuffer created!', buffer);
+  console.log("CircularBuffer created!", buffer);
 
   // 初始化离线识别器
   initOfflineRecognizer();
@@ -303,15 +310,15 @@ function processAudioData(e) {
     // 语音检测状态管理
     if (vad.isDetected() && !printed) {
       printed = true;
-      lastResult = 'Speech detected';
+      lastResult = "Speech detected";
     }
 
     if (!vad.isDetected()) {
       printed = false;
-      if (lastResult !== '') {
+      if (lastResult !== "") {
         resultList.push(lastResult);
       }
-      lastResult = '';
+      lastResult = "";
     }
 
     // 处理检测到的语音段
@@ -320,7 +327,7 @@ function processAudioData(e) {
 
   // 更新显示结果
   textArea.value = getDisplayResult();
-  textArea.scrollTop = textArea.scrollHeight;  // 自动滚动
+  textArea.scrollTop = textArea.scrollHeight; // 自动滚动
 }
 
 /**
@@ -335,8 +342,8 @@ function processDetectedSpeech() {
 
     // 执行语音识别
     const recognitionResult = performSpeechRecognition(segment);
-    
-    if (recognitionResult !== '') {
+
+    if (recognitionResult !== "") {
       durationStr += `. Result: ${recognitionResult}`;
     }
 
@@ -360,7 +367,7 @@ function performSpeechRecognition(segment) {
   console.log(recognitionResult);
   const text = recognitionResult.text;
   stream.free();
-  console.log('Recognition result:', text);
+  console.log("Recognition result:", text);
   return text;
 }
 
@@ -382,19 +389,19 @@ function createAudioClip(segment, durationStr) {
   }
 
   // 生成剪辑名称
-  const clipName = new Date().toISOString() + '--' + durationStr;
+  const clipName = new Date().toISOString() + "--" + durationStr;
 
   // 创建DOM元素
-  const clipContainer = document.createElement('article');
-  const clipLabel = document.createElement('p');
-  const audio = document.createElement('audio');
-  const deleteButton = document.createElement('button');
+  const clipContainer = document.createElement("article");
+  const clipLabel = document.createElement("p");
+  const audio = document.createElement("audio");
+  const deleteButton = document.createElement("button");
 
   // 设置样式和属性
-  clipContainer.classList.add('clip');
-  audio.setAttribute('controls', '');
-  deleteButton.textContent = 'Delete';
-  deleteButton.className = 'delete';
+  clipContainer.classList.add("clip");
+  audio.setAttribute("controls", "");
+  deleteButton.textContent = "Delete";
+  deleteButton.className = "delete";
   clipLabel.textContent = clipName;
 
   // 组装DOM结构
@@ -410,15 +417,15 @@ function createAudioClip(segment, durationStr) {
   audio.src = audioURL;
 
   // 删除按钮事件
-  deleteButton.onclick = function(e) {
+  deleteButton.onclick = function (e) {
     const evtTgt = e.target;
     evtTgt.parentNode.parentNode.removeChild(evtTgt.parentNode);
   };
 
   // 重命名功能
-  clipLabel.onclick = function() {
+  clipLabel.onclick = function () {
     const existingName = clipLabel.textContent;
-    const newClipName = prompt('Enter a new name for your sound clip?');
+    const newClipName = prompt("Enter a new name for your sound clip?");
     if (newClipName === null) {
       clipLabel.textContent = existingName;
     } else {
@@ -429,69 +436,75 @@ function createAudioClip(segment, durationStr) {
 
 // 检查浏览器是否支持getUserMedia
 if (navigator.mediaDevices.getUserMedia) {
-  console.log('getUserMedia supported.');
+  console.log("getUserMedia supported.");
 
   // 音频约束配置
-  const constraints = {audio: true};
+  const constraints = { audio: true };
 
   /**
    * 成功获取媒体流后的处理函数
    * @param {MediaStream} stream - 媒体流对象
    */
-  const onSuccess = function(stream) {
+  const onSuccess = function (stream) {
     // 初始化音频上下文
     if (!audioCtx) {
-      audioCtx = new AudioContext({sampleRate: expectedSampleRate});
+      audioCtx = new AudioContext({ sampleRate: expectedSampleRate });
     }
-    console.log('Audio context:', audioCtx);
+    console.log("Audio context:", audioCtx);
     recordSampleRate = audioCtx.sampleRate;
-    console.log('Sample rate:', recordSampleRate);
+    console.log("Sample rate:", recordSampleRate);
 
     // 创建媒体流源节点
     mediaStream = audioCtx.createMediaStreamSource(stream);
-    console.log('Media stream source created:', mediaStream);
+    console.log("Media stream source created:", mediaStream);
 
     // 创建音频处理器节点
     const bufferSize = 4096;
     const numberOfInputChannels = 1;
     const numberOfOutputChannels = 2;
-    
+
     if (audioCtx.createScriptProcessor) {
       recorder = audioCtx.createScriptProcessor(
-          bufferSize, numberOfInputChannels, numberOfOutputChannels);
+        bufferSize,
+        numberOfInputChannels,
+        numberOfOutputChannels
+      );
     } else {
       recorder = audioCtx.createJavaScriptNode(
-          bufferSize, numberOfInputChannels, numberOfOutputChannels);
+        bufferSize,
+        numberOfInputChannels,
+        numberOfOutputChannels
+      );
     }
-    console.log('Audio recorder created:', recorder);
+    console.log("Audio recorder created:", recorder);
 
     // 设置音频处理回调
     recorder.onaudioprocess = processAudioData;
 
     // 开始录音按钮事件
-    startBtn.onclick = function() {
+    startBtn.onclick = function () {
       mediaStream.connect(recorder);
       recorder.connect(audioCtx.destination);
 
-      console.log('Recording started');
+      console.log("Recording started");
 
       stopBtn.disabled = false;
       startBtn.disabled = true;
     };
 
     // 停止录音按钮事件
-    stopBtn.onclick = function() {
+    stopBtn.onclick = function () {
       vad.reset();
       buffer.reset();
-      console.log('Recording stopped');
+      console.log("Recording stopped");
 
       // 断开音频连接
       recorder.disconnect(audioCtx.destination);
       mediaStream.disconnect(recorder);
 
       // 重置按钮样式
-      startBtn.style.background = '';
-      startBtn.style.color = '';
+      startBtn.style.background = "";
+      startBtn.style.color = "";
 
       // 更新按钮状态
       stopBtn.disabled = true;
@@ -503,15 +516,15 @@ if (navigator.mediaDevices.getUserMedia) {
    * 获取媒体流失败后的错误处理函数
    * @param {Error} err - 错误对象
    */
-  const onError = function(err) {
-    console.log('The following error occurred: ' + err);
+  const onError = function (err) {
+    console.log("The following error occurred: " + err);
   };
 
   // 请求用户媒体权限
   navigator.mediaDevices.getUserMedia(constraints).then(onSuccess, onError);
 } else {
-  console.log('getUserMedia not supported on your browser!');
-  alert('getUserMedia not supported on your browser!');
+  console.log("getUserMedia not supported on your browser!");
+  alert("getUserMedia not supported on your browser!");
 }
 
 /**
@@ -524,19 +537,19 @@ function toWav(samples) {
   const view = new DataView(buf);
 
   // WAV文件头格式 (http://soundfile.sapp.org/doc/WaveFormat/)
-  view.setUint32(0, 0x46464952, true);               // "RIFF"
-  view.setUint32(4, 36 + samples.length * 2, true);  // 文件大小
-  view.setUint32(8, 0x45564157, true);               // "WAVE"
-  view.setUint32(12, 0x20746d66, true);              // "fmt "
-  view.setUint32(16, 16, true);                      // PCM格式块大小
-  view.setUint32(20, 1, true);                       // 音频格式 (PCM = 1)
-  view.setUint16(22, 1, true);                       // 声道数
-  view.setUint32(24, expectedSampleRate, true);      // 采样率
-  view.setUint32(28, expectedSampleRate * 2, true);  // 字节率
-  view.setUint16(32, 2, true);                       // 块对齐
-  view.setUint16(34, 16, true);                      // 位深度
-  view.setUint32(36, 0x61746164, true);              // "data"
-  view.setUint32(40, samples.length * 2, true);      // 数据大小
+  view.setUint32(0, 0x46464952, true); // "RIFF"
+  view.setUint32(4, 36 + samples.length * 2, true); // 文件大小
+  view.setUint32(8, 0x45564157, true); // "WAVE"
+  view.setUint32(12, 0x20746d66, true); // "fmt "
+  view.setUint32(16, 16, true); // PCM格式块大小
+  view.setUint32(20, 1, true); // 音频格式 (PCM = 1)
+  view.setUint16(22, 1, true); // 声道数
+  view.setUint32(24, expectedSampleRate, true); // 采样率
+  view.setUint32(28, expectedSampleRate * 2, true); // 字节率
+  view.setUint16(32, 2, true); // 块对齐
+  view.setUint16(34, 16, true); // 位深度
+  view.setUint32(36, 0x61746164, true); // "data"
+  view.setUint32(40, samples.length * 2, true); // 数据大小
 
   // 写入音频数据
   let offset = 44;
@@ -545,7 +558,7 @@ function toWav(samples) {
     offset += 2;
   }
 
-  return new Blob([view], {type: 'audio/wav'});
+  return new Blob([view], { type: "audio/wav" });
 }
 
 /**
@@ -558,27 +571,27 @@ function downsampleBuffer(buffer, exportSampleRate) {
   if (exportSampleRate === recordSampleRate) {
     return buffer;
   }
-  
+
   const sampleRateRatio = recordSampleRate / exportSampleRate;
   const newLength = Math.round(buffer.length / sampleRateRatio);
   const result = new Float32Array(newLength);
   let offsetResult = 0;
   let offsetBuffer = 0;
-  
+
   while (offsetResult < result.length) {
     const nextOffsetBuffer = Math.round((offsetResult + 1) * sampleRateRatio);
     let accum = 0;
     let count = 0;
-    
+
     for (let i = offsetBuffer; i < nextOffsetBuffer && i < buffer.length; i++) {
       accum += buffer[i];
       count++;
     }
-    
+
     result[offsetResult] = accum / count;
     offsetResult++;
     offsetBuffer = nextOffsetBuffer;
   }
-  
+
   return result;
 }
