@@ -60,6 +60,24 @@
 ![使用流程](https://hub.gitmirror.com/https://github.com/HelloGGX/interview-mcp-server/blob/main/docs/flow.svg)
 
 ## 🛠️ 配置
+需要去openrouter去注册账号，然后获取model_id和api_key。
 
+#### 方式一：访问地址：https://smithery.ai/server/@HelloGGX/interview-mcp-server，按照说明方式配置
 
+#### 方式二：本地执行npm run build,得到打包后的build/index.js, 在.vscode/mcp.json中 配置如下：
+```json
+{
+  "servers": {
+    "interview-mcp-server": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["xxxx\\build\\index.js"],
+      "env": {
+        "OPENROUTER_MODEL_ID": "deepseek/deepseek-chat-v3-0324:free",
+        "OPENROUTER_API_KEY": "xxxxxx"
+      }
+    }
+  }
+}
+```
 -----
