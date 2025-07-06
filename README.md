@@ -1,70 +1,69 @@
+# Interview MCP Server - Your AI Interview Partner
 
-# Interview MCP Server - 你的 AI 面试搭档
-
-**Interview MCP Server** 是一款专为提升技术面试效率与质量而设计的智能化服务器工具。它深度融合了先进的简历分析能力，并能与您最爱的主流 IDE 无缝集成，将繁琐的面试准备工作流转化为一次高效、精准且愉快的体验。
+**Interview MCP Server** is an intelligent server tool designed specifically to enhance the efficiency and quality of technical interviews. It deeply integrates advanced resume analysis capabilities and seamlessly integrates with your favorite mainstream IDEs, transforming tedious interview preparation workflows into an efficient, precise, and enjoyable experience.
 
 [](https://www.google.com/search?q=https://github.com/HelloGGX/interview-mcp-server)
 
-## 💡 面试官的困境，你是否也曾遇到？
+## 💡 Common Challenges Faced by Interviewers
 
-在快节奏的招聘流程中，技术面试官常常面临重重挑战：
+In fast-paced recruitment processes, technical interviewers often face numerous challenges:
 
-  - **耗时的题目准备**: 需从零开始，根据职位要求搜寻和设计面试题。
-  - **标准难以统一**: 如何确保每次面试的题目都紧密贴合公司的技术栈和最佳实践？
-  - **缺乏个性化**: 难以针对每位候选人的独特背景和技能，进行深入的个性化考察。
-  - **评估效率低下**: 面试过程难以全面、客观地评估候选人的综合能力。
-  - **依赖主观直觉**: 仅凭简短交流做决策，容易导致人才错配，风险极高。
-  - **繁琐的报告撰写**: 面试后的评估报告整理耗费大量宝贵时间。
+  - **Time-consuming question preparation**: Starting from scratch to search and design interview questions based on job requirements.
+  - **Difficulty maintaining standards**: How to ensure that interview questions consistently align with the company's tech stack and best practices?
+  - **Lack of personalization**: Difficulty conducting in-depth, personalized assessments tailored to each candidate's unique background and skills.
+  - **Inefficient evaluation**: Challenges in comprehensively and objectively assessing candidates' overall capabilities during interviews.
+  - **Reliance on subjective intuition**: Making decisions based solely on brief interactions can easily lead to talent mismatches with high risks.
+  - **Tedious report writing**: Post-interview evaluation report compilation consumes valuable time.
 
-传统的面试流程，正在消耗我们识别优秀人才的精力。是时候改变了！
+Traditional interview processes are draining our energy to identify excellent talent. It's time for a change!
 
-## ✨ 引入 Interview MCP Server，迎接面试新纪元
+## ✨ Introducing Interview MCP Server - Welcome to the New Era of Interviews
 
-**Interview MCP Server** 将 AI 的力量注入面试的每一个环节，提供前所未有的智能化体验：
+**Interview MCP Server** infuses AI power into every aspect of the interview process, providing an unprecedented intelligent experience:
 
-  - **🤖 智能简历解析**: 无需手动录入，自动从 PDF 简历中闪电提取候选人姓名、工作经历、技术栈等关键信息。
-  - **🎯 精准问题生成**: 结合简历内容与职位要求（如“高级前端开发”），一键生成高度相关的、有深度的面试问题。
-  - **🎙️ 实时对话记录**: 启动服务后，即可通过本地化的语音识别模型，实时、安全地将面试对话转录为 Markdown 格式，不再遗漏任何细节。
-  - **📈 自动化评估报告**: 综合简历信息、预设问题和面试对话，自动生成多维度、结构化的综合评估报告，让决策有据可依。
-  - **🌐 全方位岗位支持**: 已预置前端开发、后端开发、测试工程师等多种主流技术职位模型。
-  - **📊 多层次能力覆盖**: 无论是初级、中级还是高级工程师，都能生成符合其能力水平的面试题目。
-  - **维度化评价体系**: 从技术能力、问题解决、团队协作等多个维度进行全面评估，还原候选人真实画像。
-  - **🔌 无缝集成工作流**: 支持与 VS Code, JetBrains IDEs 等主流开发工具集成，在您最熟悉的环境中完成所有操作。
+  - **🤖 Intelligent Resume Parsing**: No manual input required - automatically extracts key information like candidate names, work experience, and tech stacks from PDF resumes in seconds.
+  - **🎯 Precise Question Generation**: Combines resume content with job requirements (such as "Senior Frontend Developer") to generate highly relevant, in-depth interview questions with one click.
+  - **🎙️ Real-time Conversation Recording**: After starting the service, use local speech recognition models to transcribe interview conversations into Markdown format in real-time and securely, capturing every detail.
+  - **📈 Automated Evaluation Reports**: Combines resume information, preset questions, and interview conversations to automatically generate multi-dimensional, structured comprehensive evaluation reports for data-driven decision making.
+  - **🌐 Comprehensive Position Support**: Pre-configured models for various mainstream technical positions including frontend development, backend development, test engineering, and more.
+  - **📊 Multi-level Capability Coverage**: Whether junior, mid-level, or senior engineers, generates interview questions appropriate for their skill level.
+  - **Multi-dimensional Evaluation System**: Comprehensive assessment across multiple dimensions including technical ability, problem-solving, teamwork, and more to reveal candidates' true profiles.
+  - **🔌 Seamless Workflow Integration**: Supports integration with mainstream development tools like VS Code, JetBrains IDEs, allowing you to complete all operations in your most familiar environment.
 
-## 🚀 快速上手
+## 🚀 Quick Start
 
-体验前所未有的高效面试流程，只需简单几步：
+Experience an unprecedented efficient interview process in just a few simple steps:
 
-1.  **上传简历**: 将候选人的 PDF 简历放入指定文件夹。
+1.  **Upload Resume**: Place the candidate's PDF resume in the designated folder.
 
-2.  **生成问题**: 鼠标选中简历，在IDE的AI中输入简单的指令，例如：
+2.  **Generate Questions**: Select the resume in your IDE and enter a simple command in the AI chat, for example:
 
     ```bash
-    # 为名为 "张三" 的候选人生成 "高级前端开发" 职位的面试题
-    /q  "张三 高级前端开发"
+    # Generate interview questions for candidate "John Doe" for "Senior Frontend Developer" position
+    /q  "John Doe Senior Frontend Developer"
     ```
 
-    或者更简洁地：
+    Or more simply:
 
     ```bash
     /q
     ```
 
-    `Interview MCP Server` 将立即分析简历，并生成一份包含12个深度问题的 `questions.md` 文件。
+    `Interview MCP Server` will immediately analyze the resume and generate a `questions.md` file containing 12 in-depth questions.
 
-3.  **开始面试**: 输入 `/record` 指令启动实时语音记录。面试官可依据 `questions.md` 中的问题展开对话。服务将通过本地模型进行离线语音识别，确保数据安全，并将对话实时转录为 `conversation.md`。
+3.  **Start Interview**: Enter the `/record` command to start real-time voice recording. Interviewers can conduct conversations based on the questions in `questions.md`. The service will use local models for offline speech recognition to ensure data security and transcribe conversations in real-time to `conversation.md`.
 
-4.  **生成报告**: 面试结束后，输入 `/evaluate` 指令。`Interview MCP Server` 会结合 `questions.md` 和 `conversation.md` 的内容，智能生成一份全面的评估报告，并自动保存在当前文件夹中。
+4.  **Generate Report**: After the interview ends, enter the `/evaluate` command. `Interview MCP Server` will intelligently combine the content from `questions.md` and `conversation.md` to generate a comprehensive evaluation report, automatically saved in the current folder.
 
 
-![使用流程](https://hub.gitmirror.com/https://github.com/HelloGGX/interview-mcp-server/blob/main/docs/flow.svg)
+![Usage Flow](https://hub.gitmirror.com/https://github.com/HelloGGX/interview-mcp-server/blob/main/docs/flow.svg)
 
-## 🛠️ 配置
-需要去openrouter去注册账号，然后获取model_id和api_key。
+## 🛠️ Configuration
+You need to register an account on OpenRouter and obtain the model_id and api_key.
 
-#### 方式一：访问地址：https://smithery.ai/server/@HelloGGX/interview-mcp-server，按照说明方式配置
+#### Method 1: Visit https://smithery.ai/server/@HelloGGX/interview-mcp-server and follow the configuration instructions
 
-#### 方式二：本地执行npm run build,得到打包后的build/index.js, 在.vscode/mcp.json中 配置如下：
+#### Method 2: Run npm run build locally to get the packaged build/index.js, then configure in .vscode/mcp.json as follows:
 ```json
 {
   "servers": {
