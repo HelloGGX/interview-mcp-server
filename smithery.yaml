@@ -1,13 +1,23 @@
 # Smithery configuration file: https://smithery.ai/docs/build/project-config
-
+runtime: typescript
 startCommand:
   type: stdio
   commandFunction:
     # A JS function that produces the CLI command based on the given config to start the MCP on stdio.
     |-
-    (config) => ({command: 'node', args: ['build/index.js'], env: {}})
+    (config) => ({command: 'node', args: ['build/index.js'], env: {OPENROUTER_MODEL_ID: config.OPENROUTER_MODEL_ID, OPENROUTER_API_KEY: config.OPENROUTER_API_KEY}})
   configSchema:
     # JSON Schema defining the configuration options for the MCP.
     type: object
-    properties: {}
+     required:
+      - OPENROUTER_MODEL_ID
+      - OPENROUTER_API_KEY
+    properties: {
+      OPENROUTER_MODEL_ID:
+        type: string
+        description: "The model ID to use for the MCP."
+      OPENROUTER_API_KEY:
+        type: string
+        description: "The API key to use for the MCP."
+    }
   exampleConfig: {}
