@@ -9,8 +9,10 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import dotenv from "dotenv";
 import { exec } from "child_process";
 import { fileURLToPath } from "url";
-import express, { Request, Response } from "express";
+import express from "express";
 import http from "http";
+import { WebSocketServer } from "ws";
+import os from "os";
 
 // 加载环境变量
 dotenv.config();
@@ -18,6 +20,33 @@ dotenv.config();
 // 常量定义
 const OPENROUTER_MODEL_ID = process.env.OPENROUTER_MODEL_ID;
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+
+// 跨平台打开浏览器的函数
+function openBrowser(url: string) {
+  const platform = os.platform();
+  let command: string;
+  
+  switch (platform) {
+    case 'win32':
+      command = `start ${url}`;
+      break;
+    case 'darwin':
+      command = `open ${url}`;
+      break;
+    case 'linux':
+      command = `xdg-open ${url}`;
+      break;
+    default:
+      console.error(`不支持的操作系统: ${platform}`);
+      return;
+  }
+  
+  exec(command, (error) => {
+    if (error) {
+      console.error(`打开浏览器失败: ${error.message}`);
+    }
+  });
+}
 
 export function registerTools(server: FastMCP) {
   server.addTool({
@@ -216,6 +245,9 @@ export function registerTools(server: FastMCP) {
     }),
     execute: async (params) => {
       try {
+        // let smartVoiceSocket = null;
+
+        const wss = new WebSocketServer({ port: 3000 });
         // 创建Express应用
         const app = express();
         const httpServer = http.createServer(app);
@@ -232,56 +264,64 @@ export function registerTools(server: FastMCP) {
         const recorderPath = path.resolve(__dirname, "./recorder");
         app.use(express.static(recorderPath));
 
-        // API端点 - 接收录音数据
-        app.post("/api/save-recording", async (req: Request, res: Response) => {
-          try {
-            const { transcript, timestamp } = req.body;
-
-            // 生成文件名
-            const date = new Date(timestamp || Date.now());
-            const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}-${String(date.getHours()).padStart(2, "0")}-${String(date.getMinutes()).padStart(2, "0")}`;
-
-            let transcriptPath: string | null = null;
-
-            // 保存转录文本
-            if (transcript) {
-              const transcriptFileName = `interview_conversation_${formattedDate}.md`;
-              // 获取PDF文件所在目录，保存转录文件到同级目录
-              const pdfDir = path.dirname(params.absolutePathToPdfFile);
-              transcriptPath = path.join(pdfDir, transcriptFileName);
-
-              const content = `# 面试对话记录
-              
-              ## 面试时间
-              ${date.toLocaleString("zh-CN")}
-
-              ## 对话内容
-              ${transcript}
-              `;
-
-              await fs.writeFile(transcriptPath, content, "utf-8");
-              console.error(`转录文件已保存: ${transcriptPath}`);
+        wss.on("connection", (ws) => {
+          console.error(`智能语音页面websocket连接成功: ${ws.url}`);
+          // smartVoiceSocket = ws;
+          // Set up ping/pong for keepalive
+          const pingInterval = setInterval(() => {
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.ping();
             }
+          }, 30000);
 
-            res.json({
-              success: true,
-              message: "录音数据已保存",
-              transcriptPath: transcriptPath,
-            });
-          } catch (error) {
-            console.error("保存录音数据失败:", error);
-            res.status(500).json({ success: false, message: "保存失败" });
-          }
+          ws.on("message", (data) => {
+            try {
+              const message = JSON.parse(data.toString());
+
+              if (message.type === "ping") {
+                // Respond to ping with pong
+                ws.send(JSON.stringify({ type: "pong", timestamp: Date.now() }));
+              } else if (message.type === "save-recording") {
+                // Handle tool response
+                const { transcript, timestamp } = message;
+                const date = new Date(timestamp || Date.now());
+                
+                let transcriptPath: string | null = null;
+
+                // 保存转录文本
+                if (transcript) {
+                  const transcriptFileName = `conversation.md`;
+                  // 获取PDF文件所在目录，保存转录文件到同级目录
+                  const pdfDir = path.dirname(params.absolutePathToPdfFile);
+                  transcriptPath = path.join(pdfDir, transcriptFileName);
+
+                  const content = `# 面试对话记录\n## 面试时间\n${date.toLocaleString("zh-CN")}\n## 对话内容\n${transcript}`;
+
+                  fs.writeFile(transcriptPath, content, "utf-8");
+                  console.error(`转录文件已保存: ${transcriptPath}`);
+                }
+              }
+            } catch (error) {
+              console.error("Error processing message:", error);
+            }
+          });
+          ws.on("close", () => {
+            console.error("智能语音页面断开连接");
+            // smartVoiceSocket = null;
+            clearInterval(pingInterval);
+          });
+          ws.on("error", (error) => {
+            console.error("WebSocket error:", error);
+          });
         });
 
         // 启动服务器
         const port = 3002;
         httpServer.listen(port, () => {
           console.error(`录音服务器已启动: http://localhost:${port}`);
-
           // 打开浏览器
           const url = `http://localhost:${port}`;
-          exec(`start ${url}`);
+          openBrowser(url);
         });
 
         return {

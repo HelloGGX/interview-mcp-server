@@ -103,23 +103,13 @@ function exportToMarkdown() {
   markdownContent += `---\n\n`;
   markdownContent += `*由智能语音识别系统生成 - ${timestamp}*\n`;
 
-  fetch("http://localhost:3002/api/save-recording", {
-    method: "POST",
-    body: JSON.stringify({
+  mcpSocket.send(
+    JSON.stringify({
+      type: "save-recording",
       transcript: markdownContent,
       timestamp: new Date().toISOString(),
-    }),
-  });
-  // // 创建下载
-  // const blob = new Blob([markdownContent], { type: 'text/markdown;charset=utf-8' });
-  // const url = URL.createObjectURL(blob);
-  // const link = document.createElement('a');
-  // link.href = url;
-  // link.download = `语音转录结果_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.md`;
-  // document.body.appendChild(link);
-  // link.click();
-  // document.body.removeChild(link);
-  // URL.revokeObjectURL(url);
+    })
+  );
 }
 
 // 全局声明 - WebAssembly模块对象，由sherpa-onnx库提供
@@ -137,6 +127,11 @@ let vad = null; // 语音活动检测器
 let buffer = null; // 循环缓冲区
 let recognizer = null; // 离线识别器
 let printed = false; // 是否已打印语音检测状态
+
+// webSocket消息相关
+const MCP_SERVER_URL = "ws://localhost:3000";
+let mcpSocket = null;
+let reconnectInterval = null;
 
 /**
  * 检查文件是否存在
@@ -595,3 +590,27 @@ function downsampleBuffer(buffer, exportSampleRate) {
 
   return result;
 }
+
+function connectToMCPServer() {
+  if (mcpSocket && mcpSocket.readyState === WebSocket.OPEN) return;
+
+  console.log("🔗 Connecting to MCP server at", MCP_SERVER_URL);
+  mcpSocket = new WebSocket(MCP_SERVER_URL);
+
+  mcpSocket.onopen = () => {
+    console.log("✅ Connected to MCP server");
+    clearInterval(reconnectInterval);
+  };
+
+  mcpSocket.onclose = () => {
+    console.log("❌ Disconnected from MCP server, will reconnect...");
+    // Attempt to reconnect every 5 seconds
+    reconnectInterval = setInterval(connectToMCPServer, 5000);
+  };
+
+  mcpSocket.onerror = (error) => {
+    console.log("⚠️ MCP WebSocket error:", error);
+  };
+}
+
+connectToMCPServer();
