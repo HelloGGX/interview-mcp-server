@@ -56,7 +56,7 @@ Experience an unprecedented efficient interview process in just a few simple ste
 4.  **Generate Report**: After the interview ends, enter the `/evaluate` command. `Interview MCP Server` will intelligently combine the content from `questions.md` and `conversation.md` to generate a comprehensive evaluation report, automatically saved in the current folder.
 
 
-![Usage Flow](https://hub.gitmirror.com/https://github.com/HelloGGX/interview-mcp-server/blob/main/docs/flow-en.svg)
+![Usage Flow](https://hub.gitmirror.com/https://github.com/HelloGGX/interview-mcp-server/blob/main/docs/flowEn.svg)
 
 ## 🛠️ Configuration
 You need to register an account on OpenRouter and obtain the model_id and api_key.
