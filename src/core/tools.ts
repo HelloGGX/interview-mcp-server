@@ -21,6 +21,10 @@ dotenv.config();
 const OPENROUTER_MODEL_ID = process.env.OPENROUTER_MODEL_ID;
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
+if (!OPENROUTER_MODEL_ID || !OPENROUTER_API_KEY) {
+  throw new Error("OPENROUTER_MODEL_ID or OPENROUTER_API_KEY is not set");
+}
+
 // 跨平台打开浏览器的函数
 function openBrowser(url: string) {
   const platform = os.platform();
