@@ -1,7 +1,10 @@
 # Smithery configuration file: https://smithery.ai/docs/build/project-config
-runtime: typescript
+runtime: "container"
+build: 
+  dockerfile: 'Dockerfile'
+  dockerBuildPath: '.'
 startCommand:
-  type: stdio
+  type: http
   commandFunction:
     # A JS function that produces the CLI command based on the given config to start the MCP on stdio.
     |-
