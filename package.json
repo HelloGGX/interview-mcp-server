@@ -19,8 +19,8 @@
   },
   "scripts": {
     "inspect": "npx @modelcontextprotocol/inspector node -- build/index.js",
-    "build": "npx bun build src/index.ts --outdir build --target node && shx chmod +x build/*.js && shx cp -r src/recorder build/",
-    "build:http": "npx bun build src/server/http-server.ts --outdir build --target node && shx chmod +x build/*.js && shx cp -r src/recorder build/",
+    "build": "npx bun build src/index.ts --outdir build --target node && shx cp -r src/recorder build/ && shx chmod +x build/*.js",
+    "build:http": "npx bun build src/server/http-server.ts --outdir build --target node && shx cp -r src/recorder build/ && shx chmod +x build/*.js",
     "dev": "npx bun --watch src/index.ts",
     "dev:http": "npx bun --watch src/server/http-server.ts",
     "start": "npx bun run src/index.ts",
