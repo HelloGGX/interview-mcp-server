@@ -12,6 +12,7 @@ COPY package.json pnpm-lock.yaml tsconfig.json ./
 
 # Copy source
 COPY src ./src
+COPY recorder ./recorder
 
 # Install deps and build
 RUN pnpm store prune
