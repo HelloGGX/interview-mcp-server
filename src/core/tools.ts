@@ -17,14 +17,6 @@ import os from "os";
 // 加载环境变量
 dotenv.config();
 
-// 常量定义
-const OPENROUTER_MODEL_ID = process.env.OPENROUTER_MODEL_ID;
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-
-if (!OPENROUTER_MODEL_ID || !OPENROUTER_API_KEY) {
-  throw new Error("OPENROUTER_MODEL_ID or OPENROUTER_API_KEY is not set");
-}
-
 // 跨平台打开浏览器的函数
 function openBrowser(url: string) {
   const platform = os.platform();
@@ -75,14 +67,15 @@ export function registerTools(server: FastMCP) {
         ),
     }),
     execute: async (params) => {
-      try {
-        if (!OPENROUTER_MODEL_ID) {
-          throw new Error("OPENROUTER_MODEL_ID is not set");
-        }
-        if (!OPENROUTER_API_KEY) {
-          throw new Error("OPENROUTER_API_KEY is not set");
-        }
+      // 常量定义
+      const OPENROUTER_MODEL_ID = process.env.OPENROUTER_MODEL_ID;
+      const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
+      if (!OPENROUTER_MODEL_ID || !OPENROUTER_API_KEY) {
+        throw new Error("OPENROUTER_MODEL_ID or OPENROUTER_API_KEY is not set");
+      }
+
+      try {
         const openrouter = createOpenRouter({
           apiKey: OPENROUTER_API_KEY,
         });
@@ -174,14 +167,14 @@ export function registerTools(server: FastMCP) {
         .describe("Absolute path to the conversation file in markdown format"),
     }),
     execute: async (params) => {
-      try {
-        if (!OPENROUTER_MODEL_ID) {
-          throw new Error("OPENROUTER_MODEL_ID is not set");
-        }
-        if (!OPENROUTER_API_KEY) {
-          throw new Error("OPENROUTER_API_KEY is not set");
-        }
+      // 常量定义
+      const OPENROUTER_MODEL_ID = process.env.OPENROUTER_MODEL_ID;
+      const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
+      if (!OPENROUTER_MODEL_ID || !OPENROUTER_API_KEY) {
+        throw new Error("OPENROUTER_MODEL_ID or OPENROUTER_API_KEY is not set");
+      }
+      try {
         const openrouter = createOpenRouter({
           apiKey: OPENROUTER_API_KEY,
         });
