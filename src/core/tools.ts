@@ -29,22 +29,22 @@ if (!OPENROUTER_MODEL_ID || !OPENROUTER_API_KEY) {
 function openBrowser(url: string) {
   const platform = os.platform();
   let command: string;
-  
+
   switch (platform) {
-    case 'win32':
+    case "win32":
       command = `start ${url}`;
       break;
-    case 'darwin':
+    case "darwin":
       command = `open ${url}`;
       break;
-    case 'linux':
+    case "linux":
       command = `xdg-open ${url}`;
       break;
     default:
       console.error(`不支持的操作系统: ${platform}`);
       return;
   }
-  
+
   exec(command, (error) => {
     if (error) {
       console.error(`打开浏览器失败: ${error.message}`);
@@ -95,7 +95,7 @@ export function registerTools(server: FastMCP) {
         const mdFilePath = path.join(pdfDir, mdFileName);
         let markdownContent = "";
 
-        // 检查md文件是否已存在
+        // 检查简历的md文件是否已存在
         const fileExists = await fs
           .access(mdFilePath)
           .then(() => true)
@@ -289,7 +289,7 @@ export function registerTools(server: FastMCP) {
                 // Handle tool response
                 const { transcript, timestamp } = message;
                 const date = new Date(timestamp || Date.now());
-                
+
                 let transcriptPath: string | null = null;
 
                 // 保存转录文本
