@@ -13,7 +13,7 @@ COPY src ./src
 COPY src/recorder ./src/recorder
 
 # Install dependencies and build
-RUN npm install && npm run build
+RUN npm install && npm run build:http
 
 # ----- Production Stage -----
 FROM node:lts-alpine
@@ -32,4 +32,4 @@ RUN npm install --production --ignore-scripts
 EXPOSE 8080
 
 # Default command using CLI flags
-CMD ["node", "dist/index.js"]
+CMD ["node", "dist/http-server.js"]
