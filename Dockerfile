@@ -16,8 +16,8 @@ COPY src ./src
 COPY src/recorder ./src/recorder
 
 # Install dependencies without running scripts, then install build deps and compile
-RUN pnpm install --ignore-scripts && \
-  pnpm install typescript @types/node --no-save --no-package-lock && \
+RUN npm install --ignore-scripts && \
+  npm install typescript @types/node --no-save --no-package-lock && \
   npx run build
 
 # Remove dev dependencies
