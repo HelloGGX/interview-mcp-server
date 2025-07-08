@@ -9,7 +9,7 @@
   "author": "gavin",
   "license": "Apache-2.0",
   "bin": {
-    "interview-mcp-server": "build/http-server.js"
+    "interview-mcp-server": "build/index.js"
   },
   "files": [
     "build"
