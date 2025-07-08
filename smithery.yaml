@@ -1,8 +1,5 @@
-runtime: "typescript"
-build:
-  dockerfile: "Dockerfile" # Path to your Dockerfile
-  dockerBuildPath: "." # Docker build context
 startCommand:
+  type: "http"
   configSchema: # JSON Schema for configuration
     type: "object"
     properties:
