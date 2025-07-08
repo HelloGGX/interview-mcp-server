@@ -16,7 +16,7 @@ COPY src/recorder ./src/recorder
 
 # Install deps and build
 RUN pnpm store prune
-RUN pnpm install --frozen-lockfile && pnpm run build:http
+RUN pnpm install --frozen-lockfile && pnpm run build
 
 # Runner stage
 FROM node:lts-alpine AS runner
@@ -34,4 +34,4 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --prod --frozen-lockfile
 
 # Start server via HTTP Stream
-ENTRYPOINT ["node", "build/http-server.js"]
+ENTRYPOINT ["node", "build/index.js"]
