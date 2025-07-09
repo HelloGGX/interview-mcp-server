@@ -20,12 +20,8 @@ RUN npm install --ignore-scripts && \
 # Remove dev dependencies
 RUN npm prune --production
 
-# Copy build artifacts and manifest
-COPY --from=builder /app/build ./build
-COPY package.json pnpm-lock.yaml ./
-
 # Expose port
 ENV PORT=3001
 
 # Default command to run the MCP server
-ENTRYPOINT ["node", "build/http-server.js"]
+ENTRYPOINT ["node", "/app/build/http-server.js"]
