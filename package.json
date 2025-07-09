@@ -18,7 +18,7 @@
     "url": "https://github.com/HelloGGX/interview-mcp-server"
   },
   "scripts": {
-    "inspect": "npx @modelcontextprotocol/inspector node -- build/index.js",
+    "inspect": "npx @modelcontextprotocol/inspector node -- build/http-server.js",
     "build": "npx bun build src/index.ts --outdir build --target node && shx cp -r src/recorder build/ && shx chmod +x build/*.js",
     "build:http": "npx bun build src/server/http-server.ts --outdir build --target node && shx cp -r src/recorder build/ && shx chmod +x build/*.js",
     "dev": "npx bun --watch src/index.ts",
