@@ -1,7 +1,7 @@
 {
   "name": "mcp-interview-server",
-  "module": "src/server/server.ts",
-  "main": "build/index.js",
+  "module": "src/server/http-server.ts",
+  "main": "build/http-server.js",
   "type": "module",
   "version": "1.0.0",
   "description": "Interview MCP Server 是一款强大的MCP Server工具，为公司提供智能化的面试体验。它集成了更加科学实用的简历分析能力，并与主流IDE无缝集成，为面试官提供高效精简的技术面试准备工作流程。",
@@ -9,7 +9,7 @@
   "author": "gavin",
   "license": "Apache-2.0",
   "bin": {
-    "interview-mcp-server": "build/index.js"
+    "interview-mcp-server": "build/http-server.js"
   },
   "files": [
     "build"
@@ -18,7 +18,7 @@
     "url": "https://github.com/HelloGGX/interview-mcp-server"
   },
   "scripts": {
-    "inspect": "npx @modelcontextprotocol/inspector node -- build/index.js",
+    "inspect": "npx @modelcontextprotocol/inspector node -- build/http-server.js",
     "build": "npx bun build src/index.ts --outdir build --target node && shx cp -r src/recorder build/ && shx chmod +x build/*.js",
     "build:http": "npx bun build src/server/http-server.ts --outdir build --target node && shx cp -r src/recorder build/ && shx chmod +x build/*.js",
     "dev": "npx bun --watch src/index.ts",

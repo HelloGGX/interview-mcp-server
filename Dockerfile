@@ -21,7 +21,7 @@ RUN npm install --ignore-scripts && \
 RUN npm prune --production
 
 # Expose port
-ENV PORT=3000
+ENV PORT=3001
 
 # Default command to run the MCP server
 ENTRYPOINT ["node", "build/http-server.js"]
