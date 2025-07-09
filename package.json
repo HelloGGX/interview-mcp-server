@@ -23,8 +23,8 @@
     "build:http": "tsc && shx cp -r src/recorder build/ && shx chmod +x build/*.js",
     "dev": "npx tsc --w atch src/index.ts",
     "dev:http": "npx tsc --watch src/server/http-server.ts",
-    "start": "npx bun run src/index.ts",
-    "start:http": "npx bun run src/server/http-server.ts",
+    "start": "npx tsc src/index.ts",
+    "start:http": "npx tsc src/server/http-server.ts",
     "format": "prettier --write .",
     "lint": "eslint \"**/*.{js,ts,tsx}\" --fix"
   },
