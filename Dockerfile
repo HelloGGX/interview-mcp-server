@@ -15,7 +15,7 @@ COPY src ./src
 
 # Install deps and build
 RUN pnpm store prune
-RUN pnpm install --frozen-lockfile && pnpm run build:http
+RUN pnpm install && pnpm run build:http
 
 # Runner stage
 FROM node:lts-alpine AS runner
@@ -30,7 +30,7 @@ COPY --from=builder /app/build ./build
 COPY package.json pnpm-lock.yaml ./
 
 # Install only production dependencies
-RUN pnpm install --prod --frozen-lockfile
+RUN pnpm install --prod
 
 # Start server via HTTP Stream
 ENTRYPOINT ["node", "build/http-server.js"]
