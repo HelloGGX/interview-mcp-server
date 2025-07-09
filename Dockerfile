@@ -7,14 +7,13 @@ RUN apk add --no-cache python3 make g++
 WORKDIR /app
 
 # Copy package and tsconfig
-COPY package.json pnpm-lock.yaml tsconfig.json ./
+COPY package.json pnpm-lock.yaml bun.lock tsconfig.json ./
 
 # Copy source
 COPY src ./src
 
 # Install dependencies without running scripts, then install build deps and compile
 RUN npm install --ignore-scripts && \
-  npm install typescript @types/node --no-save --no-package-lock && \
   npm run build:http
 
 # Remove dev dependencies
