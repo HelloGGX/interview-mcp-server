@@ -15,7 +15,7 @@ COPY src ./src
 # Install dependencies without running scripts, then install build deps and compile
 RUN npm install --ignore-scripts && \
   npm install typescript @types/node --no-save --no-package-lock && \
-  npm run build:http
+  npx tsc
 
 # Remove dev dependencies
 RUN npm prune --production
