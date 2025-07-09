@@ -1,5 +1,5 @@
 startCommand:
-  type: "http"
+  type: "stdio"
   configSchema: # JSON Schema for configuration
     type: "object"
     properties:
