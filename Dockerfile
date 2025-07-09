@@ -24,4 +24,4 @@ RUN npm prune --production
 ENV PORT=3001
 
 # Default command to run the MCP server
-ENTRYPOINT ["node", "build/http-server.js"]
+ENTRYPOINT ["node", "build/server/http-server.js"]
