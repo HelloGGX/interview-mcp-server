@@ -15,7 +15,7 @@ COPY src ./src
 # Install dependencies without running scripts, then install build deps and compile
 RUN npm install --ignore-scripts && \
   npm install typescript @types/node --no-save --no-package-lock && \
-  npx tsc
+  npm run build:http
 
 # Remove dev dependencies
 RUN npm prune --production
@@ -24,4 +24,4 @@ RUN npm prune --production
 ENV PORT=3000
 
 # Default command to run the MCP server
-ENTRYPOINT ["node", "build/index.js"]
+ENTRYPOINT ["node", "build/http-server.js"]
