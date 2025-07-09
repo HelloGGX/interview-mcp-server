@@ -6,8 +6,16 @@ startCommand:
     # A JS function that produces the CLI command based on the given config to start the MCP on stdio.
     |-
     (config) => ({command: 'node', args: ['build/index.js'], env: {}})
-  configSchema:
-    # JSON Schema defining the configuration options for the MCP.
-    type: object
-    properties: {}
-  exampleConfig: {}
+  configSchema: # JSON Schema for configuration
+    type: "object"
+    properties:
+      OPENROUTER_API_KEY:
+        type: "string"
+        description: "Your API key"
+      OPENROUTER_MODEL_ID:
+        type: "string"
+        description: "The model ID to use for the MCP."
+    required: ["OPENROUTER_API_KEY", "OPENROUTER_MODEL_ID"]
+  exampleConfig:
+    OPENROUTER_API_KEY: "sk-example123"
+    OPENROUTER_MODEL_ID: "gpt-4o-mini"
