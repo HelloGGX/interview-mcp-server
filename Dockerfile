@@ -16,10 +16,6 @@ COPY src ./src
 RUN npm install --ignore-scripts && \
   npm run build:http
 
-  # Copy build artifacts and manifest
-COPY --from=builder /app/build ./build
-COPY package.json pnpm-lock.yaml ./
-
 # Remove dev dependencies
 RUN npm prune --production
 
