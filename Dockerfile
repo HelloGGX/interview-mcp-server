@@ -20,9 +20,6 @@ RUN npx bun install --ignore-scripts && \
 # Runner stage
 FROM node:lts-alpine AS runner
 
-# Enable Corepack and pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
 WORKDIR /app
 
 # Copy build artifacts and manifest
