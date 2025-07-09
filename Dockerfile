@@ -13,7 +13,7 @@ COPY package.json bun.lock tsconfig.json ./
 COPY src ./src
 
 # Install dependencies without running scripts, then install build deps and compile
-RUN bun install --ignore-scripts && \
+RUN npx bun install --ignore-scripts && \
   npm run build:http
 
 # Remove dev dependencies
