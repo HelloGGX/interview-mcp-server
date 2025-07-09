@@ -8,14 +8,13 @@ RUN apk add --no-cache python3 make g++
 WORKDIR /app
 
 # Copy manifest files
-COPY package.json bun.lock tsconfig.json ./
+COPY package.json pnpm-lock.yaml tsconfig.json ./
 
 # Copy source
 COPY src ./src
 
 # Install deps and build
-RUN npx bun install --ignore-scripts && \
-  npm run build:http
+RUN pnpm install --frozen-lockfile && pnpm run build:http
 
 # Runner stage
 FROM node:lts-alpine AS runner
@@ -24,10 +23,8 @@ WORKDIR /app
 
 # Copy build artifacts and manifest
 COPY --from=builder /app/build ./build
-COPY package.json bun.lock ./
+COPY package.json pnpm-lock.yaml ./
 
-# Install only production dependencies
-RUN npx bun install
 
 # Start server via HTTP Stream
-ENTRYPOINT ["node", "build/http-server.js"]
+ENTRYPOINT ["node", "build/server/http-server.js"]
