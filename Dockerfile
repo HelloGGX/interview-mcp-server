@@ -13,8 +13,8 @@ COPY package.json pnpm-lock.yaml tsconfig.json ./
 COPY src ./src
 
 # Install dependencies without running scripts, then install build deps and compile
-RUN npm install --ignore-scripts && \
-  npm install typescript @types/node --no-save --no-package-lock && \
+RUN pnpm install --ignore-scripts && \
+  pnpm install typescript @types/node --no-save --no-package-lock && \
   npx tsc
 
 # Remove dev dependencies
