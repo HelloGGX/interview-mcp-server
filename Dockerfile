@@ -7,7 +7,7 @@ RUN apk add --no-cache python3 make g++
 WORKDIR /app
 
 # Copy package and tsconfig
-COPY package.json pnpm-lock.yaml bun.lock tsconfig.json ./
+COPY package.json bun.lock tsconfig.json ./
 
 # Copy source
 COPY src ./src
