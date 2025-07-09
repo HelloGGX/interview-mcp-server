@@ -2,6 +2,7 @@
 
 **Interview MCP Server** is an intelligent server tool designed specifically to enhance the efficiency and quality of technical interviews. It deeply integrates advanced resume analysis capabilities and seamlessly integrates with your favorite mainstream IDEs, transforming tedious interview preparation workflows into an efficient, precise, and enjoyable experience.
 
+[![smithery badge](https://smithery.ai/badge/@HelloGGX/interview-mcp-server)](https://smithery.ai/server/@HelloGGX/interview-mcp-server)
 [](https://www.google.com/search?q=https://github.com/HelloGGX/interview-mcp-server)
 
 ## 💡 Common Challenges Faced by Interviewers
@@ -62,6 +63,14 @@ Experience an unprecedented efficient interview process in just a few simple ste
 You need to register an account on OpenRouter and obtain the model_id and api_key.
 
 #### Method 1: Visit https://smithery.ai/server/@HelloGGX/interview-mcp-server and follow the configuration instructions
+
+#### Installing via Smithery
+
+To install Interview Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@HelloGGX/interview-mcp-server):
+
+```bash
+npx -y @smithery/cli install @HelloGGX/interview-mcp-server --client claude
+```
 
 #### Method 2: Run npm run build locally to get the packaged build/index.js, then configure in .vscode/mcp.json as follows:
 ```json
