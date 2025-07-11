@@ -2,7 +2,7 @@ import { FastMCP } from "fastmcp";
 import path from "path";
 import z from "zod";
 import fs from "fs/promises";
-import pdf2md from "@opendocsg/pdf2md";
+// import pdf2md from "@opendocsg/pdf2md";
 import { EVALUATE, GENERATE_QUESTION } from "./prompts.js";
 import { generateText } from "ai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
@@ -13,6 +13,7 @@ import express from "express";
 import http from "http";
 import { WebSocketServer } from "ws";
 import os from "os";
+import { getPdfText } from "../utils/index.js";
 
 // 加载环境变量
 dotenv.config();
@@ -99,10 +100,7 @@ export function registerTools(server: FastMCP) {
           markdownContent = await fs.readFile(mdFilePath, "utf-8");
         } else {
           // 文件不存在，继续转换流程
-          const dataBuffer = await fs.readFile(params.absolutePathToPdfFile);
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-expect-error
-          markdownContent = await pdf2md(dataBuffer);
+          markdownContent = await getPdfText(params.absolutePathToPdfFile);
         }
         // 将markdown内容写入文件
         await fs.writeFile(mdFilePath, markdownContent, "utf-8");
@@ -137,7 +135,7 @@ export function registerTools(server: FastMCP) {
           content: [
             {
               type: "text",
-              text: `转换成功！文件已保存到${questionFilePath}`,
+              text: `面试问题生成成功！文件已保存到: ${questionFilePath}`,
             },
           ],
         };

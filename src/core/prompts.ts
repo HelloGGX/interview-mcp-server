@@ -58,7 +58,7 @@ Ensure at least one question per dimension, with some questions potentially asse
 - Draw upon common interview practices and question types typical for the identified job role.  
 - Focus on professional experiences and skills; avoid inquiries into personal life unless directly relevant.  
 - For technical roles, consider including questions about recent developments or emerging technologies, adjusted to the ability level.
-
+- The questions should be in Chinese.
 </requirement>
 <response_format>
 **候选人姓名**: string
