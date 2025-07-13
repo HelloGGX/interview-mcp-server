@@ -4,7 +4,7 @@ import z from "zod";
 import fs from "fs/promises";
 // import pdf2md from "@opendocsg/pdf2md";
 import { EVALUATE, GENERATE_QUESTION } from "./prompts.js";
-import { generateText } from "ai";
+import { generateText, LanguageModelV1 } from "ai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import dotenv from "dotenv";
 import { exec } from "child_process";
@@ -13,6 +13,7 @@ import express from "express";
 import http from "http";
 import { WebSocketServer } from "ws";
 import os from "os";
+import { createDeepSeek } from '@ai-sdk/deepseek'
 import { getPdfText } from "../utils/index.js";
 
 // 加载环境变量
@@ -68,18 +69,27 @@ export function registerTools(server: FastMCP) {
         ),
     }),
     execute: async (params) => {
+      let model: LanguageModelV1;
       // 常量定义
       const OPENROUTER_MODEL_ID = process.env.OPENROUTER_MODEL_ID;
       const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+      const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
 
-      if (!OPENROUTER_MODEL_ID || !OPENROUTER_API_KEY) {
-        throw new Error("OPENROUTER_MODEL_ID or OPENROUTER_API_KEY is not set");
-      }
-
-      try {
+      if (OPENROUTER_MODEL_ID && OPENROUTER_API_KEY) {
         const openrouter = createOpenRouter({
           apiKey: OPENROUTER_API_KEY,
         });
+        model = openrouter(OPENROUTER_MODEL_ID);
+      } else if (DEEPSEEK_API_KEY) {
+        const deepseek = createDeepSeek({
+          apiKey: process.env.DEEPSEEK_API_KEY ?? "",
+        });
+        model = deepseek('deepseek-chat')
+      } else {
+        throw new Error("OPENROUTER_MODEL_ID or OPENROUTER_API_KEY or DEEPSEEK_API_KEY is not set");
+      }
+
+      try {
 
         // 获取pdf文件所在目录
         const pdfDir = path.dirname(params.absolutePathToPdfFile);
@@ -120,7 +130,7 @@ export function registerTools(server: FastMCP) {
               content: messages,
             },
           ],
-          model: openrouter(OPENROUTER_MODEL_ID),
+          model,
           maxTokens: 8192,
         });
 
@@ -165,17 +175,26 @@ export function registerTools(server: FastMCP) {
         .describe("Absolute path to the conversation file in markdown format"),
     }),
     execute: async (params) => {
+      let model: LanguageModelV1;
       // 常量定义
       const OPENROUTER_MODEL_ID = process.env.OPENROUTER_MODEL_ID;
       const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+      const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
 
-      if (!OPENROUTER_MODEL_ID || !OPENROUTER_API_KEY) {
-        throw new Error("OPENROUTER_MODEL_ID or OPENROUTER_API_KEY is not set");
-      }
-      try {
+      if (OPENROUTER_MODEL_ID && OPENROUTER_API_KEY) {
         const openrouter = createOpenRouter({
           apiKey: OPENROUTER_API_KEY,
         });
+        model = openrouter(OPENROUTER_MODEL_ID);
+      } else if (DEEPSEEK_API_KEY) {
+        const deepseek = createDeepSeek({
+          apiKey: process.env.DEEPSEEK_API_KEY ?? "",
+        });
+        model = deepseek('deepseek-chat')
+      } else {
+        throw new Error("OPENROUTER_MODEL_ID or OPENROUTER_API_KEY or DEEPSEEK_API_KEY is not set");
+      }
+      try {
 
         // 读取markdown文件内容
         const questionContent = await fs.readFile(params.absolutePathToQuestion, "utf-8");
@@ -195,7 +214,7 @@ export function registerTools(server: FastMCP) {
               content: messages,
             },
           ],
-          model: openrouter(OPENROUTER_MODEL_ID),
+          model,
           maxTokens: 8192,
         });
 
