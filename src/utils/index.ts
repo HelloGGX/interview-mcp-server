@@ -1,4 +1,4 @@
-import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
+import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 
 /**
  * PDF文本项接口定义
@@ -625,7 +625,7 @@ function generateMarkdown(blocks: ContentBlock[]): string {
 export async function getPdfText(file: string) {
   try {
     // 加载PDF文档
-    const loadingTask = pdfjsLib.getDocument(file);
+    const loadingTask = getDocument(file);
     const pdf = await loadingTask.promise;
     let fullText = "";
 
