@@ -2,9 +2,19 @@ import { FastMCP } from "fastmcp";
 import path from "path";
 import z from "zod";
 import fs from "fs/promises";
-// import pdf2md from "@opendocsg/pdf2md";
-import { EVALUATE, GENERATE_QUESTION } from "./prompts.js";
-import { generateText, LanguageModelV1 } from "ai";
+import {
+  DEVELOPER_EVALUATION_DIMENSIONS,
+  DEVELOPER_QUESTION_DESIGN,
+  DEVELOPER_QUESTION_TYPES,
+  DEVELOPER_TASK,
+  EVALUATE,
+  GENERATE_QUESTION,
+  UI_EVALUATION_DIMENSIONS,
+  UI_QUESTION_DESIGN,
+  UI_QUESTION_TYPES,
+  UI_TASK,
+} from "./prompts.js";
+import { CoreMessage, generateText, LanguageModelV1 } from "ai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import dotenv from "dotenv";
 import { exec } from "child_process";
@@ -13,7 +23,7 @@ import express from "express";
 import http from "http";
 import { WebSocketServer } from "ws";
 import os from "os";
-import { createDeepSeek } from '@ai-sdk/deepseek'
+import { createDeepSeek } from "@ai-sdk/deepseek";
 import { getPdfText } from "../utils/index.js";
 
 // 加载环境变量
@@ -84,13 +94,12 @@ export function registerTools(server: FastMCP) {
         const deepseek = createDeepSeek({
           apiKey: process.env.DEEPSEEK_API_KEY ?? "",
         });
-        model = deepseek('deepseek-chat')
+        model = deepseek("deepseek-chat");
       } else {
         throw new Error("OPENROUTER_MODEL_ID or OPENROUTER_API_KEY or DEEPSEEK_API_KEY is not set");
       }
 
       try {
-
         // 获取pdf文件所在目录
         const pdfDir = path.dirname(params.absolutePathToPdfFile);
         // 生成markdown文件名，与pdf同名但后缀为.md
@@ -121,9 +130,28 @@ export function registerTools(server: FastMCP) {
         <level>${params.level}</level>
         `;
 
+        let system = "";
+        if (["ui", "ux"].includes(params.position)) {
+          system = GENERATE_QUESTION(
+            10,
+            UI_TASK,
+            UI_EVALUATION_DIMENSIONS,
+            UI_QUESTION_TYPES,
+            UI_QUESTION_DESIGN
+          );
+        } else {
+          system = GENERATE_QUESTION(
+            12,
+            DEVELOPER_TASK,
+            DEVELOPER_EVALUATION_DIMENSIONS,
+            DEVELOPER_QUESTION_TYPES,
+            DEVELOPER_QUESTION_DESIGN
+          );
+        }
+
         // 调用openrouter的api，生成面试问题
         const { text } = await generateText({
-          system: GENERATE_QUESTION,
+          system,
           messages: [
             {
               role: "user",
@@ -167,6 +195,11 @@ export function registerTools(server: FastMCP) {
     description:
       "Evaluate the interviewer's performance based on the interview conversation, Use this tool when mentions /e",
     parameters: z.object({
+      position: z
+        .enum(["frontend", "backend", "test", "ui", "ux"])
+        .describe(
+          "The target position type for the interview: frontend developer, backend developer, or test engineer"
+        ),
       absolutePathToQuestion: z
         .string()
         .describe("Absolute path to the question file in markdown format"),
@@ -190,32 +223,52 @@ export function registerTools(server: FastMCP) {
         const deepseek = createDeepSeek({
           apiKey: process.env.DEEPSEEK_API_KEY ?? "",
         });
-        model = deepseek('deepseek-chat')
+        model = deepseek("deepseek-chat");
       } else {
         throw new Error("OPENROUTER_MODEL_ID or OPENROUTER_API_KEY or DEEPSEEK_API_KEY is not set");
       }
       try {
-
         // 读取markdown文件内容
         const questionContent = await fs.readFile(params.absolutePathToQuestion, "utf-8");
         const conversationContent = await fs.readFile(params.absolutePathToConversation, "utf-8");
 
-        const messages = `
+        const interviewMessages = `
+        <position>${params.position}</position>
         <question>${questionContent}</question>
         <conversation>${conversationContent}</conversation>
         `;
+        const messages: Array<CoreMessage> = [
+          {
+            role: "user",
+            content: interviewMessages,
+          },
+        ];
+
+        let system = "";
+        if (["ui", "ux"].includes(params.position)) {
+          system = EVALUATE(UI_EVALUATION_DIMENSIONS, 10);
+        } else {
+          system = EVALUATE(DEVELOPER_EVALUATION_DIMENSIONS, 12);
+        }
 
         // 调用openrouter的api，生成评估报告
         const { text } = await generateText({
-          system: EVALUATE,
-          messages: [
-            {
-              role: "user",
-              content: messages,
-            },
-          ],
+          system: system,
+          messages,
           model,
           maxTokens: 8192,
+        });
+
+        messages.push({
+          role: "assistant",
+          content: `
+          <evaluation>${text}</evaluation>
+          `,
+        });
+
+        messages.push({
+          role: "user",
+          content: BRAIN_STORMING,
         });
 
         // 获取评估报告文件路径
