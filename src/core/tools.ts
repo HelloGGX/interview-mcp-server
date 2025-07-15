@@ -259,17 +259,17 @@ export function registerTools(server: FastMCP) {
           maxTokens: 8192,
         });
 
-        messages.push({
-          role: "assistant",
-          content: `
-          <evaluation>${text}</evaluation>
-          `,
-        });
+        // messages.push({
+        //   role: "assistant",
+        //   content: `
+        //   <evaluation>${text}</evaluation>
+        //   `,
+        // });
 
-        messages.push({
-          role: "user",
-          content: BRAIN_STORMING,
-        });
+        // messages.push({
+        //   role: "user",
+        //   content: BRAIN_STORMING,
+        // });
 
         // 获取评估报告文件路径
         const conversationDir = path.dirname(params.absolutePathToConversation);

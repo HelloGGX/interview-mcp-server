@@ -254,4 +254,4 @@ If no role is specified, make reasonable assumptions (e.g., software engineer fo
   `;
 };
 // 定义反思流程的提示
-export const BRAIN_STORMING = `请先在 <scratchpad> 标签内思考一下<evaluation>标签中的内容，是否符合`;
+export const BRAIN_STORMING = `请先在 <scratchpad> 标签内反思，<evaluation>标签中的内容，是否符合`;
