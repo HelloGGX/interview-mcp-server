@@ -242,6 +242,11 @@ If no role is specified, make reasonable assumptions (e.g., software engineer fo
 ## **总结**
 - **总体得分**: [X/10]
 - **总体评价**: [Briefly summarize the candidate's performance from the evaluated dimensions in 500 characters or less (including punctuation).]
+-【技术能力】：
+-【编码能力】：
+-【项目经验】：
+-【沟通能力】：
+-【学习能力】：
 </response_format>
 
 <additional_guidelines>

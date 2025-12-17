@@ -177,12 +177,12 @@ export function registerTools(server: FastMCP) {
             },
           ],
         };
-      } catch {
+      } catch (err) {
         return {
           content: [
             {
               type: "text",
-              text: "PDF转换失败，请检查文件路径和格式",
+              text: `${err}`,
             },
           ],
         };
