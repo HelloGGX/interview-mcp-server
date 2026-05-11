@@ -193,7 +193,7 @@ export function registerTools(server: FastMCP) {
   server.addTool({
     name: "evaluate-interview",
     description:
-      "Evaluate the interviewer's performance based on the interview conversation, Use this tool when mentions /e",
+      "Evaluate the interviewee's performance based on the interview conversation, Use this tool when mentions /e",
     parameters: z.object({
       position: z
         .enum(["frontend", "backend", "test", "ui", "ux"])
